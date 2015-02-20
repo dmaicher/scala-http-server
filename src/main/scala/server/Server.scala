@@ -30,7 +30,7 @@ class Server(val port: Int, val poolSize: Int) extends LazyLogging {
 }
 
 class ServerJob(val socket: Socket) extends Runnable with LazyLogging {
-  //socket.setSoTimeout(5000)
+  socket.setSoTimeout(5000)
 
   override def run(): Unit = {
     var request: Request = null
