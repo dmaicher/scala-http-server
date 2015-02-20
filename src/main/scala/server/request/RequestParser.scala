@@ -24,8 +24,7 @@ class RequestParser {
     val in = new BufferedSource(inputStream)
 
     while(state != STATE_DONE && in.hasNext) {
-      val curChar = in.next()
-      buffer += curChar
+      buffer += in.next()
       state match {
         case STATE_PARSE_REQUEST_LINE =>
           if(endsWithLineBreak(buffer)) {
@@ -84,16 +83,12 @@ class RequestLineParser {
 
 class HeaderParser {
   def parse(s: String): Headers  = {
-    val lines = s.split("[\r\n]+")
-
     val headers = new Headers
-
-    lines.map(l => l.split(":", 2).map(_.trim)).foreach(a => {
+    s.split("[\r\n]+").map(l => l.split(":", 2).map(_.trim)).foreach(a => {
       if(a.size == 2) {
         headers += a(0) -> a(1)
       }
     })
-
     headers
   }
 }
