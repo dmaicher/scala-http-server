@@ -1,6 +1,6 @@
 package server
 
-import java.net.{SocketTimeoutException, ServerSocket, Socket}
+import java.net.{SocketException, SocketTimeoutException, ServerSocket, Socket}
 import java.util.concurrent.Executors
 
 import com.typesafe.scalalogging.LazyLogging
@@ -30,7 +30,7 @@ class Server(val port: Int, val poolSize: Int) extends LazyLogging {
 }
 
 class ServerJob(val socket: Socket) extends Runnable with LazyLogging {
-  socket.setSoTimeout(5000)
+  //socket.setSoTimeout(5000)
 
   override def run(): Unit = {
     var request: Request = null
@@ -56,8 +56,15 @@ class ServerJob(val socket: Socket) extends Runnable with LazyLogging {
       case _ => true
     }
 
-    new ResponseWriter().write(socket.getOutputStream, response, protocol, writeRespBody)
-    socket.close()
+    if(!socket.isClosed) {
+      try {
+        new ResponseWriter().write(socket.getOutputStream, response, protocol, writeRespBody)
+        socket.close()
+      }
+      catch {
+        case e: SocketException => logger.warn("Error writing response", e)
+      }
+    }
   }
 }
 
