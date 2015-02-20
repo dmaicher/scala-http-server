@@ -88,7 +88,7 @@ class HeaderParser {
 
     val headers = new Headers
 
-    lines.map(l => l.split(":", 2)).foreach(a => {
+    lines.map(l => l.split(":", 2).map(_.trim)).foreach(a => {
       if(a.size == 2) {
         headers += a(0) -> a(1)
       }
