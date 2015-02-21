@@ -4,13 +4,24 @@ import java.net.{SocketException, SocketTimeoutException, ServerSocket, Socket}
 import java.util.concurrent.Executors
 
 import com.typesafe.scalalogging.LazyLogging
+import server.handler.{StaticFileHandler, Handler}
 import server.http.{HttpMethod, HttpProtocol}
 import server.request.{Request, ParseRequestException, RequestParser}
 import server.response.{ResponseWriter, Response}
+import server.router.Router
 
 object Server {
   def main (args: Array[String]) {
     val server = new Server(8080, 10)
+
+    server.getRouter.registerHandler(new Handler {
+      override def handle(request: Request): Response = {
+        new Response(200)
+      }
+    }, "/test")
+
+    server.getRouter.registerHandler(new StaticFileHandler("/var/www/"), "/test.html")
+
     server.start()
     System.in.read
   }
@@ -18,18 +29,21 @@ object Server {
 
 class Server(val port: Int, val poolSize: Int) extends LazyLogging {
   private val threadPool = Executors.newFixedThreadPool(poolSize)
+  private val router = new Router
 
   def start(): Unit = {
     val serverSocket = new ServerSocket(port)
     while(true) {
       val socket = serverSocket.accept()
       logger.debug("Accepted new incoming connection")
-      threadPool.execute(new ServerJob(socket))
+      threadPool.execute(new ServerJob(socket, router))
     }
   }
+
+  def getRouter = router
 }
 
-class ServerJob(val socket: Socket) extends Runnable with LazyLogging {
+class ServerJob(val socket: Socket, router: Router) extends Runnable with LazyLogging {
   socket.setSoTimeout(5000)
 
   override def run(): Unit = {
@@ -37,7 +51,17 @@ class ServerJob(val socket: Socket) extends Runnable with LazyLogging {
     var response: Response = null
     try {
       request = new RequestParser().parse(socket.getInputStream)
-      response = new Response(200, "It works!")
+
+      response = {
+        try {
+          router.handle(request)
+        }
+        catch {
+          case e: Exception =>
+            logger.warn("Error handling request", e)
+            new Response(500)
+        }
+      }
     }
     catch {
       case e: ParseRequestException =>
