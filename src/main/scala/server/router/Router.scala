@@ -1,5 +1,6 @@
 package server.router
 
+import java.io.FileNotFoundException
 import java.util.concurrent.ConcurrentHashMap
 
 import server.handler.Handler
@@ -18,7 +19,7 @@ class Router extends Handler {
     //TODO: very naive route matching...not really useful
     handlers.get(request.location) match {
       case h: Handler => h.handle(request)
-      case _ => new Response(404)
+      case _ => throw new FileNotFoundException("No handler found for path "+request.location)
     }
   }
 }

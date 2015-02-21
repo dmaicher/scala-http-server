@@ -1,5 +1,6 @@
 package server
 
+import java.io.FileNotFoundException
 import java.net.{SocketException, SocketTimeoutException, ServerSocket, Socket}
 import java.util.concurrent.Executors
 
@@ -57,6 +58,9 @@ class ServerJob(val socket: Socket, router: Router) extends Runnable with LazyLo
           router.handle(request)
         }
         catch {
+          case e: FileNotFoundException =>
+            logger.warn("Not found", e)
+            new Response(404)
           case e: Exception =>
             logger.warn("Error handling request", e)
             new Response(500)
