@@ -4,8 +4,8 @@ import java.io.FileNotFoundException
 import java.util.concurrent.ConcurrentHashMap
 
 import server.handler.Handler
-import server.request.Request
-import server.response.Response
+import server.http.request.Request
+import server.http.response.Response
 
 class Router extends Handler {
 

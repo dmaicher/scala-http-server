@@ -1,7 +1,7 @@
 package server.handler
 
-import server.request.Request
-import server.response.Response
+import server.http.request.Request
+import server.http.response.Response
 
 class StaticFileHandler(val path: String) extends Handler {
   override def handle(request: Request): Response = {

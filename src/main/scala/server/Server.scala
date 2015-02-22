@@ -6,9 +6,10 @@ import java.util.concurrent.Executors
 
 import com.typesafe.scalalogging.LazyLogging
 import server.handler.{StaticFileHandler, Handler}
+import server.http.request.parser.{HeaderParser, RequestLineParser, ParseRequestException, RequestParser}
 import server.http.{HttpMethod, HttpProtocol}
-import server.request.{Request, ParseRequestException, RequestParser}
-import server.response.{ResponseWriter, Response}
+import server.http.request.Request
+import server.http.response.{ResponseWriter, Response}
 import server.router.Router
 
 object Server {
@@ -51,7 +52,7 @@ class ServerJob(val socket: Socket, router: Router) extends Runnable with LazyLo
     var request: Request = null
     var response: Response = null
     try {
-      request = new RequestParser().parse(socket.getInputStream)
+      request = new RequestParser(new RequestLineParser, new HeaderParser).parse(socket.getInputStream)
 
       response = {
         try {
@@ -62,7 +63,7 @@ class ServerJob(val socket: Socket, router: Router) extends Runnable with LazyLo
             logger.warn("Not found", e)
             new Response(404)
           case e: Exception =>
-            logger.warn("Error handling request", e)
+            logger.error("Error handling request", e)
             new Response(500)
         }
       }

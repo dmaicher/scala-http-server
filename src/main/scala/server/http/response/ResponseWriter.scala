@@ -1,4 +1,4 @@
-package server.response
+package server.http.response
 
 import java.io.{DataOutputStream, OutputStream}
 
