@@ -2,7 +2,7 @@ package server
 
 import java.io.FileNotFoundException
 import java.net.{SocketException, SocketTimeoutException, ServerSocket, Socket}
-import java.util.concurrent.Executors
+import java.util.concurrent.{ThreadFactory, Executors}
 
 import com.typesafe.scalalogging.LazyLogging
 import server.handler.{StaticFileHandler, Handler}
@@ -14,7 +14,7 @@ import server.router.Router
 
 object Server {
   def main (args: Array[String]) {
-    val server = new Server(8080, 10)
+    val server = new Server(8080, 4)
 
     server.getRouter.registerHandler(new Handler {
       override def handle(request: Request): Response = {
@@ -30,7 +30,7 @@ object Server {
 }
 
 class Server(val port: Int, val poolSize: Int) extends LazyLogging {
-  private val threadPool = Executors.newFixedThreadPool(poolSize)
+  private val threadPool = Executors.newFixedThreadPool(poolSize, new WorkerThreadFactory)
   private val router = new Router
 
   def start(): Unit = {
@@ -38,21 +38,31 @@ class Server(val port: Int, val poolSize: Int) extends LazyLogging {
     while(true) {
       val socket = serverSocket.accept()
       logger.debug("Accepted new incoming connection")
-      threadPool.execute(new ServerJob(socket, router))
+      threadPool.execute(new Worker(socket, router))
     }
   }
 
   def getRouter = router
 }
 
-class ServerJob(val socket: Socket, router: Router) extends Runnable with LazyLogging {
+class WorkerThreadFactory extends ThreadFactory {
+  override def newThread(runnable: Runnable): Thread = {
+    new WorkerThread(runnable, new RequestParser(new RequestLineParser, new HeaderParser))
+  }
+}
+
+class WorkerThread(private val runnable: Runnable, private val requestParser: RequestParser) extends Thread(runnable) {
+  def getRequestParser = requestParser
+}
+
+class Worker(val socket: Socket, router: Router) extends Runnable with LazyLogging {
   socket.setSoTimeout(5000)
 
   override def run(): Unit = {
     var request: Request = null
     var response: Response = null
     try {
-      request = new RequestParser(new RequestLineParser, new HeaderParser).parse(socket.getInputStream)
+      request = Thread.currentThread().asInstanceOf[WorkerThread].getRequestParser.parse(socket.getInputStream)
 
       response = {
         try {
