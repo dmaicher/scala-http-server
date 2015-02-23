@@ -88,7 +88,16 @@ class RequestParser(val requestLineParser: RequestLineParser, val headerParser: 
   }
 
   private def endsWithLineBreak(b: ArrayBuffer[Byte], count: Int = 1): Boolean = {
-    b.takeRight(count*2).map(_.toChar).mkString.equals("\r\n"*count)
+    if(b.size < count*2) {
+      return false
+    }
+    for(i <- Range(0, count)) {
+      if(b(b.size-2*i-2) != 13 || b(b.size-2*i-1) != 10) {
+        return false
+      }
+    }
+
+    true
   }
 
   private def bufferToString(b: ArrayBuffer[Byte]): String = {
