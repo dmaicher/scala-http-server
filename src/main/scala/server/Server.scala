@@ -7,7 +7,7 @@ import java.util.concurrent.{ThreadFactory, Executors}
 import com.typesafe.scalalogging.LazyLogging
 import server.handler.{StaticFileHandler, Handler}
 import server.http.request.parser.{HeaderParser, RequestLineParser, ParseRequestException, RequestParser}
-import server.http.{HttpMethod, HttpProtocol}
+import server.http.{Headers, HttpMethod, HttpProtocol}
 import server.http.request.Request
 import server.http.response.{ResponseWriter, Response}
 import server.router.Router
@@ -18,7 +18,7 @@ object Server {
 
     server.getRouter.registerHandler(new Handler {
       override def handle(request: Request): Response = {
-        new Response(200)
+        new Response(200, "It works!!!")
       }
     }, "/test")
 
@@ -63,7 +63,7 @@ class Worker(val socket: Socket, router: Router) extends Runnable with LazyLoggi
     var response: Response = null
     try {
       request = Thread.currentThread().asInstanceOf[WorkerThread].getRequestParser.parse(socket.getInputStream)
-      println(request.body)
+      logger.debug("Request body: "+request.body)
       response = {
         try {
           router.handle(request)
@@ -85,19 +85,13 @@ class Worker(val socket: Socket, router: Router) extends Runnable with LazyLoggi
         response = new Response(408)
     }
 
-    val protocol = request match {
-      case r: Request => r.protocol
-      case _ => HttpProtocol.HTTP_1
-    }
-
-    val writeRespBody = request match {
-      case r: Request => r.method != HttpMethod.HEAD
-      case _ => true
+    if(request == null) {
+      request = new Request(HttpMethod.GET, "/", HttpProtocol.HTTP_1, new Headers)
     }
 
     if(!socket.isClosed) {
       try {
-        new ResponseWriter().write(socket.getOutputStream, response, protocol, writeRespBody)
+        new ResponseWriter().write(socket.getOutputStream, request, response)
         socket.close()
       }
       catch {
