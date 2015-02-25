@@ -31,6 +31,5 @@ class ResponseWriter {
     val out = new DataOutputStream(outputStream)
     out.write(stringBuilder.toString().getBytes(encoding))
     out.flush()
-    out.close()
   }
 }

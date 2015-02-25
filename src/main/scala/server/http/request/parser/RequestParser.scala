@@ -2,15 +2,14 @@ package server.http.request.parser
 
 import java.io.InputStream
 import java.nio.charset.CodingErrorAction
-
+import com.typesafe.scalalogging.LazyLogging
 import server.http.Headers
 import server.http.encoding.ChunkedInputStream
 import server.http.request.Request
-
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Codec
 
-class RequestParser(val requestLineParser: RequestLineParser, val headerParser: HeaderParser) {
+class RequestParser(val requestLineParser: RequestLineParser, val headerParser: HeaderParser) extends LazyLogging {
   private val STATE_PARSE_REQUEST_LINE = 1
   private val STATE_PARSE_HEADERS = 2
   private val STATE_PARSE_BODY = 3
@@ -45,33 +44,33 @@ class RequestParser(val requestLineParser: RequestLineParser, val headerParser: 
           case STATE_PARSE_HEADERS =>
             if(endsWithLineBreak(buffer, 2)) {
               headers = headerParser.parse(bufferToString(buffer).trim)
+              logger.debug(headers.toString())
               buffer.clear()
-              if(!headers.getOrElse(Headers.TRANSFER_ENCODING, "identity").toLowerCase.equals("identity")) {
-                //TODO: check if chunked
-                curInputStream = new ChunkedInputStream(inputStream)
-                parseBody = () => STATE_PARSE_BODY
-              }
-              else if(headers.contains(Headers.CONTENT_LENGTH)) {
-                val length = {
-                  try {
-                    headers(Headers.CONTENT_LENGTH).toInt
+              val bodyTransferEncoding = headers.getOrElse(Headers.TRANSFER_ENCODING, "identity")
+              state = {
+                if(!bodyTransferEncoding.toLowerCase.equals("identity")) {
+                  curInputStream = new ChunkedInputStream(inputStream)
+                  if(!bodyTransferEncoding.equals("chunked")) {
+                    throw new ParseRequestException("Unsupported Transfer-encoding")
                   }
-                  catch {
-                    case e: NumberFormatException => throw new ParseRequestException("Invalid Content-Length")
-                  }
+                  parseBody = () => STATE_PARSE_BODY
+                  STATE_PARSE_BODY
                 }
-
-                parseBody = () => {
-                  if (buffer.length < length) {
-                    STATE_PARSE_BODY
+                else if(headers.contains(Headers.CONTENT_LENGTH)) {
+                  val length = {
+                    try {
+                      headers(Headers.CONTENT_LENGTH).toInt
+                    }
+                    catch {
+                      case e: NumberFormatException => throw new ParseRequestException("Invalid Content-Length")
+                    }
                   }
-                  else {
-                    STATE_DONE
-                  }
+                  parseBody = () => if (buffer.length < length) STATE_PARSE_BODY else STATE_DONE
+                  STATE_PARSE_BODY
                 }
-              }
-              else {
-                state = STATE_DONE
+                else {
+                  STATE_DONE
+                }
               }
             }
           case STATE_PARSE_BODY =>
