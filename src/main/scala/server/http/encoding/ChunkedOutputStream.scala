@@ -2,9 +2,7 @@ package server.http.encoding
 
 import java.io.{FilterOutputStream, OutputStream}
 
-class ChunkedOutputStream(out: OutputStream) extends FilterOutputStream(out) {
-  private val chunkSize = 100
-
+class ChunkedOutputStream(out: OutputStream, chunkSize: Int) extends FilterOutputStream(out) {
   override def write(b: Array[Byte]): Unit = {
     for(i <- 0 to b.length-1 by chunkSize) {
       val curChunkLength = math.min(b.length-i, chunkSize)

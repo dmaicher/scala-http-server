@@ -7,6 +7,7 @@ class Headers extends HashMap[String, String]
 object Headers {
   val CONTENT_LENGTH = "Content-Length"
   val TRANSFER_ENCODING = "Transfer-Encoding"
+  val ACCEPT_ENCODING = "Accept-Encoding"
 }
 
 /*

@@ -1,6 +1,7 @@
 package server.http.response
 
 import java.io.OutputStream
+import java.util.zip.GZIPOutputStream
 import server.http.{HttpProtocol, HttpMethod, Headers}
 import server.http.encoding.ChunkedOutputStream
 import server.http.request.Request
@@ -18,14 +19,25 @@ class ResponseWriter {
 
     response.headers += "Connection" -> "close"
     if(!response.body.isEmpty && response.contentType != null && !response.contentType.isEmpty) {
-      response.headers += "Content-Type" -> (response.contentType+"; charset="+encoding)
+      //TODO: charset only for textual and not binary data (json, xml, svg, ...)
+      response.headers += "Content-Type" -> (response.contentType+(if(response.contentType.startsWith("text/")) "; chartset="+encoding))
     }
 
     var bodyOutputStream = outputStream
-    if(request.protocol == HttpProtocol.HTTP_1_1 && request.headers.getOrElse(Headers.TRANSFER_ENCODING, "").equals("chunked")) {
+
+    //TODO: make configurable if chunked should be used
+    if(request.protocol == HttpProtocol.HTTP_1_1) {
       response.headers += Headers.TRANSFER_ENCODING -> "chunked"
-      bodyOutputStream = new ChunkedOutputStream(outputStream)
+      bodyOutputStream = new ChunkedOutputStream(bodyOutputStream, 100)
     }
+
+    /*
+    //TODO: consider priorities
+    if(request.headers.getOrElse(Headers.ACCEPT_ENCODING, "").contains("gzip")) {
+      response.headers += "Content-Encoding" -> "gzip"
+      bodyOutputStream = new GZIPOutputStream(bodyOutputStream)
+    }
+    */
 
     for((k,v) <- response.headers) {
       stringBuilder.append(k+": "+v+CRLF)

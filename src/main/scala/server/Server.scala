@@ -63,7 +63,6 @@ class Worker(val socket: Socket, router: Router) extends Runnable with LazyLoggi
     var response: Response = null
     try {
       request = Thread.currentThread().asInstanceOf[WorkerThread].getRequestParser.parse(socket.getInputStream)
-      logger.debug("Request body: "+request.body)
       response = {
         try {
           router.handle(request)

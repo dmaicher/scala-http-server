@@ -46,11 +46,11 @@ class RequestParser(val requestLineParser: RequestLineParser, val headerParser: 
               headers = headerParser.parse(bufferToString(buffer).trim)
               logger.debug(headers.toString())
               buffer.clear()
-              val bodyTransferEncoding = headers.getOrElse(Headers.TRANSFER_ENCODING, "identity")
+              val transferEnc = headers.getOrElse(Headers.TRANSFER_ENCODING, "identity").toLowerCase
               state = {
-                if(!bodyTransferEncoding.toLowerCase.equals("identity")) {
+                if(!transferEnc.equals("identity")) {
                   curInputStream = new ChunkedInputStream(inputStream)
-                  if(!bodyTransferEncoding.equals("chunked")) {
+                  if(!transferEnc.equals("chunked")) {
                     throw new ParseRequestException("Unsupported Transfer-encoding")
                   }
                   parseBody = () => STATE_PARSE_BODY
@@ -83,7 +83,10 @@ class RequestParser(val requestLineParser: RequestLineParser, val headerParser: 
       throw new ParseRequestException()
     }
 
-    new Request(requestLine.method, requestLine.location, requestLine.protocol, headers, bufferToString(buffer))
+    val req = new Request(requestLine.method, requestLine.location, requestLine.protocol, headers, bufferToString(buffer))
+    logger.debug("Request body: "+req.body)
+
+    req
   }
 
   private def endsWithLineBreak(b: ArrayBuffer[Byte], count: Int = 1): Boolean = {

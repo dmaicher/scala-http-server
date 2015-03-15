@@ -1,9 +1,12 @@
 package server.http.request.parser
 
-import java.io.ByteArrayInputStream
+import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
+import java.util.zip.GZIPOutputStream
+import javax.print.attribute.standard.Compression
 
 import org.scalamock.scalatest._
 import org.scalatest._
+import server.http.encoding.ChunkedOutputStream
 import server.http.{Headers, HttpMethod, HttpProtocol}
 
 class RequestParserTestSpec  extends FlatSpec with Matchers with MockFactory {
@@ -55,7 +58,7 @@ class RequestParserTestSpec  extends FlatSpec with Matchers with MockFactory {
     request.body should be(body)
   }
 
-  "RequestParser" should "parses body for Transfer-Encoding header correctly" in {
+  "RequestParser" should "parses body for Transfer-Encoding chunked header correctly" in {
     val body = "Some_really_nice_body_öäü"
     val headers = new Headers
     headers += "Transfer-Encoding" -> "chunked"
@@ -63,7 +66,10 @@ class RequestParserTestSpec  extends FlatSpec with Matchers with MockFactory {
     requestLineParser.parse _ expects * returns new RequestLine(HttpMethod.GET, "/", HttpProtocol.HTTP_1_1)
     headerParser.parse _ expects * returns headers
 
-    val input = new ByteArrayInputStream(("RL\r\nH\r\n\r\n"+body).getBytes("UTF-8"))
+    val outByte = new ByteArrayOutputStream()
+    new ChunkedOutputStream(outByte, 2).write(body.getBytes("UTF-8"))
+
+    val input = new ByteArrayInputStream("RL\r\nH\r\n\r\n".getBytes("UTF-8") ++ outByte.toByteArray)
 
     val request = requestParser.parse(input)
     request.body should be(body)
