@@ -2,7 +2,7 @@ package server
 
 import java.io.FileNotFoundException
 import java.net.{ServerSocket, Socket, SocketException, SocketTimeoutException}
-import java.util.concurrent.{Executors, ThreadFactory}
+import java.util.concurrent._
 
 import com.typesafe.scalalogging.LazyLogging
 import server.handler.Handler
@@ -14,7 +14,7 @@ import server.router.Router
 
 object Server {
   def main (args: Array[String]) {
-    val server = new Server(8080, 4)
+    val server = new Server(8080, 10, 50)
 
     server.getRouter.registerHandler(new Handler {
       override def handle(request: Request): Response = {
@@ -27,8 +27,17 @@ object Server {
   }
 }
 
-class Server(val port: Int, val poolSize: Int) extends LazyLogging {
-  private val threadPool = Executors.newFixedThreadPool(poolSize, new WorkerThreadFactory)
+class Server(val port: Int, val minThreads: Int, val maxThreads: Int) extends LazyLogging {
+  private val executor = new ThreadPoolExecutor(
+    minThreads,
+    maxThreads,
+    60,
+    TimeUnit.SECONDS,
+    new SynchronousQueue[Runnable](),
+    new WorkerThreadFactory,
+    new ThreadPoolExecutor.CallerRunsPolicy()
+  )
+  executor.allowCoreThreadTimeOut(true)
   private val router = new Router
 
   def start(): Unit = {
@@ -36,7 +45,7 @@ class Server(val port: Int, val poolSize: Int) extends LazyLogging {
     while(true) {
       val socket = serverSocket.accept()
       logger.debug("Accepted new incoming connection")
-      threadPool.execute(new Worker(socket, router))
+      executor.execute(new Worker(socket, router))
     }
   }
 
@@ -45,7 +54,9 @@ class Server(val port: Int, val poolSize: Int) extends LazyLogging {
 
 class WorkerThreadFactory extends ThreadFactory {
   override def newThread(runnable: Runnable): Thread = {
-    new WorkerThread(runnable, new RequestParser(new RequestLineParser, new HeaderParser))
+    val t = new WorkerThread(runnable, new RequestParser(new RequestLineParser, new HeaderParser))
+    t.setDaemon(true)
+    t
   }
 }
 
