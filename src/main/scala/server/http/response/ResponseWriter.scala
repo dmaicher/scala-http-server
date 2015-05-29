@@ -17,15 +17,24 @@ class ResponseWriter {
     //TODO: get correct status message
     stringBuilder.append(request.protocol+" "+response.status+" OK"+CRLF)
 
-    response.headers += "Connection" -> "close"
-    if(!response.body.isEmpty && response.contentType != null && !response.contentType.isEmpty) {
+    //TODO: only in case there is a response body with chunking otherwise we have to close it!
+    response.headers += "Connection" -> {
+      if(request.protocol == HttpProtocol.HTTP_1_1 && request.keepAlive) {
+        "Keep-Alive"
+      }
+      else {
+        "Close"
+      }
+    }
+
+    if(response.hasBody && response.contentType != null && !response.contentType.isEmpty) {
       //TODO: charset only for textual and not binary data (json, xml, svg, ...)
       response.headers += "Content-Type" -> (response.contentType+(if(response.contentType.startsWith("text/")) "; chartset="+encoding))
     }
 
     var bodyOutputStream = outputStream
 
-    //TODO: make configurable if chunked should be used
+    //TODO: make configurable if chunked should be used [+ do not use for HEAD requests or 304 response]
     if(request.protocol == HttpProtocol.HTTP_1_1) {
       response.headers += Headers.TRANSFER_ENCODING -> "chunked"
       bodyOutputStream = new ChunkedOutputStream(bodyOutputStream, 100)
@@ -46,11 +55,10 @@ class ResponseWriter {
     stringBuilder.append(CRLF)
     outputStream.write(stringBuilder.toString().getBytes(encoding))
 
-    if(request.method != HttpMethod.HEAD && !response.body.isEmpty) {
+    if(request.method != HttpMethod.HEAD && response.hasBody) {
       bodyOutputStream.write(response.body.getBytes(encoding))
-      bodyOutputStream.flush()
     }
 
-    outputStream.flush()
+    bodyOutputStream.flush()
   }
 }

@@ -10,8 +10,6 @@ class ChunkedOutputStream(out: OutputStream, chunkSize: Int) extends FilterOutpu
       super.write(b.slice(i, i+curChunkLength))
       writeCRLF()
     }
-    writeChunkLength(0)
-    writeCRLF()
   }
 
   private def writeChunkLength(l: Int): Unit = {
@@ -22,5 +20,11 @@ class ChunkedOutputStream(out: OutputStream, chunkSize: Int) extends FilterOutpu
   private def writeCRLF(): Unit = {
     super.write(13)
     super.write(10)
+  }
+
+  override def flush(): Unit = {
+    writeChunkLength(0)
+    writeCRLF()
+    super.flush()
   }
 }

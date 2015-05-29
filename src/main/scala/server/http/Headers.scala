@@ -8,6 +8,7 @@ object Headers {
   val CONTENT_LENGTH = "Content-Length"
   val TRANSFER_ENCODING = "Transfer-Encoding"
   val ACCEPT_ENCODING = "Accept-Encoding"
+  val CONNECTION = "Connection"
 }
 
 /*

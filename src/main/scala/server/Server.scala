@@ -1,15 +1,15 @@
 package server
 
 import java.io.FileNotFoundException
-import java.net.{SocketException, SocketTimeoutException, ServerSocket, Socket}
-import java.util.concurrent.{ThreadFactory, Executors}
+import java.net.{ServerSocket, Socket, SocketException, SocketTimeoutException}
+import java.util.concurrent.{Executors, ThreadFactory}
 
 import com.typesafe.scalalogging.LazyLogging
-import server.handler.{StaticFileHandler, Handler}
-import server.http.request.parser.{HeaderParser, RequestLineParser, ParseRequestException, RequestParser}
-import server.http.{Headers, HttpMethod, HttpProtocol}
+import server.handler.Handler
 import server.http.request.Request
-import server.http.response.{ResponseWriter, Response}
+import server.http.request.parser.{HeaderParser, ParseRequestException, RequestLineParser, RequestParser}
+import server.http.response.{Response, ResponseWriter}
+import server.http.{Headers, HttpMethod, HttpProtocol}
 import server.router.Router
 
 object Server {
@@ -18,11 +18,9 @@ object Server {
 
     server.getRouter.registerHandler(new Handler {
       override def handle(request: Request): Response = {
-        new Response(200, "It works!!!")
+        new Response(200, "<img src=\"bla.png\" />")
       }
     }, "/test")
-
-    server.getRouter.registerHandler(new StaticFileHandler("/var/www/"), "/test.html")
 
     server.start()
     System.in.read
@@ -59,29 +57,29 @@ class Worker(val socket: Socket, router: Router) extends Runnable with LazyLoggi
   socket.setSoTimeout(5000)
 
   override def run(): Unit = {
+    processRequest()
+  }
+
+  private def processRequest(): Unit = {
     var request: Request = null
     var response: Response = null
     try {
       request = Thread.currentThread().asInstanceOf[WorkerThread].getRequestParser.parse(socket.getInputStream)
-      response = {
-        try {
-          router.handle(request)
-        }
-        catch {
-          case e: FileNotFoundException =>
-            logger.warn("Not found", e)
-            new Response(404)
-          case e: Exception =>
-            logger.error("Error handling request", e)
-            new Response(500)
-        }
-      }
+      response = router.handle(request)
     }
     catch {
       case e: ParseRequestException =>
+        logger.warn("Error pasing request", e)
         response = new Response(400)
       case e: SocketTimeoutException =>
+        logger.warn("Timeout", e)
         response = new Response(408)
+      case e: FileNotFoundException =>
+        logger.warn("Not found", e)
+        response = new Response(404)
+      case e: Exception =>
+        logger.error("Error handling request", e)
+        response = new Response(500)
     }
 
     if(request == null) {
@@ -90,11 +88,25 @@ class Worker(val socket: Socket, router: Router) extends Runnable with LazyLoggi
 
     if(!socket.isClosed) {
       try {
+        logger.debug("Writing response with status %d".format(response.status))
         new ResponseWriter().write(socket.getOutputStream, request, response)
-        socket.close()
       }
       catch {
         case e: SocketException => logger.warn("Error writing response", e)
+      }
+
+      if(!request.keepAlive) {
+        logger.debug("Closing connection...")
+        try {
+          socket.close()
+        }
+        catch {
+          case e: SocketException => logger.warn("Error closing socket", e)
+        }
+      }
+      else if(socket.isConnected) {
+        logger.debug("Keeping connection open...")
+        this.processRequest()
       }
     }
   }
