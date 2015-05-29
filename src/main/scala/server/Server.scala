@@ -14,7 +14,7 @@ import server.router.Router
 
 object Server {
   def main (args: Array[String]) {
-    val server = new Server(8080, 10, 50)
+    val server = new Server(8080, 50)
 
     server.getRouter.registerHandler(new Handler {
       override def handle(request: Request): Response = {
@@ -27,15 +27,14 @@ object Server {
   }
 }
 
-class Server(val port: Int, val minThreads: Int, val maxThreads: Int) extends LazyLogging {
+class Server(val port: Int, val maxThreads: Int) extends LazyLogging {
   private val executor = new ThreadPoolExecutor(
-    minThreads,
+    maxThreads,
     maxThreads,
     60,
     TimeUnit.SECONDS,
-    new SynchronousQueue[Runnable](),
-    new WorkerThreadFactory,
-    new ThreadPoolExecutor.CallerRunsPolicy()
+    new LinkedBlockingQueue[Runnable](),
+    new WorkerThreadFactory
   )
   executor.allowCoreThreadTimeOut(true)
   private val router = new Router
