@@ -2,10 +2,10 @@ package server.router
 
 import java.io.FileNotFoundException
 import java.util.concurrent.ConcurrentHashMap
-
 import server.handler.Handler
 import server.http.request.Request
 import server.http.response.Response
+import scala.collection.JavaConversions._
 
 class Router extends Handler {
 
@@ -16,10 +16,11 @@ class Router extends Handler {
   }
 
   override def handle(request: Request): Response = {
-    //TODO: very naive route matching...not really useful
-    handlers.get(request.location) match {
-      case h: Handler => h.handle(request)
-      case _ => throw new FileNotFoundException("No handler found for path "+request.location)
+    for(key <- handlers.keys()) {
+      if(request.location.startsWith(key)) {
+        return handlers.get(key).handle(request)
+      }
     }
+    throw new FileNotFoundException("No handler found for path "+request.location)
   }
 }

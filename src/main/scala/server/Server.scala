@@ -5,7 +5,7 @@ import java.net.{ServerSocket, Socket, SocketException, SocketTimeoutException}
 import java.util.concurrent._
 
 import com.typesafe.scalalogging.LazyLogging
-import server.handler.Handler
+import server.handler.FastCgi.FastCgiHandler
 import server.http.request.Request
 import server.http.request.parser.{HeaderParser, ParseRequestException, RequestLineParser, RequestParser}
 import server.http.response.{Response, ResponseWriter}
@@ -16,11 +16,15 @@ object Server {
   def main (args: Array[String]) {
     val server = new Server(8080, 50)
 
+    /*
     server.getRouter.registerHandler(new Handler {
       override def handle(request: Request): Response = {
         new Response(200, "<img src=\"bla.png\" />")
       }
     }, "/test")
+    */
+
+    server.getRouter.registerHandler(new FastCgiHandler("/var/www/php"), "/")
 
     server.start()
     System.in.read
