@@ -3,46 +3,34 @@ package server.handler.FastCgi
 import java.io.InputStream
 
 class RecordReader {
+  private val headerLength = 8
   def read(inputStream: InputStream): Record = {
-    var b: Byte = 0
     var pos = 0
-    val header = new Array[Byte](8)
+    val header = new Array[Byte](headerLength)
     var padding = 0
     var contentLength = 0
-    var content: Array[Byte] = null
-    var complete = false
-    while(!complete) {
-      val in = inputStream.read()
-      if(in != -1) {
-        b = in.toByte
-        if(pos < header.length) {
-          header(pos) = b
+    var content: Array[Byte] = new Array[Byte](0)
+    var in: Int = 0
+    while({in = inputStream.read(); in != -1} && pos < headerLength+contentLength+padding-1) {
+      val b = in.toByte
+      if (pos < headerLength) {
+        header(pos) = b
+        if(pos == 5) {
+          contentLength = ((header(4) & 0xFF) << 8) + (b & 0xFF)
+          content = new Array[Byte](contentLength)
         }
-        else {
-          if(pos == header.length) {
-            contentLength = ((header(4) & 0xFF) << 8) + (header(5) & 0xFF)
-            content = new Array[Byte](contentLength)
-            if(contentLength == 0) {
-              complete = true
-            }
-            padding = header(6) & 0xFF
-          }
-          val contentPos = pos - header.length
-          if(contentPos < contentLength) {
-            content(contentPos) = b
-          }
-          if(contentPos == contentLength+padding-1) {
-            complete = true
-          }
+        if(pos == 6) {
+          padding = b & 0xFF
         }
       }
-      else {
-        complete = true
+      //only add to content when not in padding
+      else if(pos < headerLength+contentLength) {
+        content(pos - headerLength) = b
       }
       pos += 1
     }
 
-    if(pos >= header.length) {
+    if(pos >= headerLength) {
       new Record(header, content)
     }
     else {

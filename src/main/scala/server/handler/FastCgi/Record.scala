@@ -29,6 +29,10 @@ class Record(val recordType: Byte, val requestId: Short, val data: Array[Byte]) 
 
     out
   }
+
+  def isFinalType: Boolean = {
+    recordType == RecordType.FCGI_ABORT_REQUEST || recordType == RecordType.FCGI_END_REQUEST
+  }
 }
 
 object RecordType {
@@ -40,10 +44,6 @@ object RecordType {
   val FCGI_STDOUT: Byte = 6
   val FCGI_STDERR: Byte = 7
   val FCGI_DATA: Byte = 8
-
-  def isEndType(t: Byte): Boolean = {
-    t == FCGI_ABORT_REQUEST || t == FCGI_END_REQUEST
-  }
 }
 
 class BeginRequestRecord(requestId: Short, val keepAlive: Boolean = false)
