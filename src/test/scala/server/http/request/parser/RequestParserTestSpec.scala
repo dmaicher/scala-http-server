@@ -7,7 +7,8 @@ import javax.print.attribute.standard.Compression
 import org.scalamock.scalatest._
 import org.scalatest._
 import server.http.encoding.ChunkedOutputStream
-import server.http.{Headers, HttpMethod, HttpProtocol}
+import server.http.headers.{HeaderParser, Headers}
+import server.http.{HttpMethod, HttpProtocol}
 
 class RequestParserTestSpec  extends FlatSpec with Matchers with MockFactory {
   val requestLineParser = mock[RequestLineParser]

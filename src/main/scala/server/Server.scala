@@ -6,10 +6,11 @@ import java.util.concurrent._
 
 import com.typesafe.scalalogging.LazyLogging
 import server.handler.FastCgi.FastCgiHandler
+import server.http.headers.{HeaderParser, Headers}
 import server.http.request.Request
-import server.http.request.parser.{HeaderParser, ParseRequestException, RequestLineParser, RequestParser}
+import server.http.request.parser.{ParseRequestException, RequestLineParser, RequestParser}
 import server.http.response.{Response, ResponseWriter}
-import server.http.{Headers, HttpMethod, HttpProtocol}
+import server.http.{HttpMethod, HttpProtocol}
 import server.router.Router
 
 object Server {

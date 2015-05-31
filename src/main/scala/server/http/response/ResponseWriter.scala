@@ -2,7 +2,8 @@ package server.http.response
 
 import java.io.OutputStream
 import java.util.zip.GZIPOutputStream
-import server.http.{HttpProtocol, HttpMethod, Headers}
+import server.http.headers.Headers
+import server.http.{HttpProtocol, HttpMethod}
 import server.http.encoding.ChunkedOutputStream
 import server.http.request.Request
 

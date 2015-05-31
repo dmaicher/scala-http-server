@@ -1,4 +1,4 @@
-package server.http
+package server.http.headers
 
 import scala.collection.mutable.HashMap
 

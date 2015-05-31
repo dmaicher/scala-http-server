@@ -2,7 +2,7 @@ package server.http.request.parser
 
 import org.scalatest._
 import org.scalamock.scalatest._
-import server.http.Headers
+import server.http.headers.{HeaderParser, Headers}
 
 class HeaderParserTestSpec  extends FlatSpec with Matchers with MockFactory {
   val parser = new HeaderParser

@@ -2,7 +2,7 @@ package server.http.request
 
 import org.scalamock.scalatest._
 import org.scalatest._
-import server.http.Headers
+import server.http.headers.Headers
 
 class RequestTestSpec  extends FlatSpec with Matchers with MockFactory {
   "Request.keepAlive" should "be correct" in {

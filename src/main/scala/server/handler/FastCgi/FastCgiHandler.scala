@@ -3,11 +3,12 @@ package server.handler.FastCgi
 import java.net.Socket
 import com.typesafe.scalalogging.LazyLogging
 import server.handler.Handler
+import server.http.headers.HeaderParser
 import server.http.request.Request
 import server.http.response.Response
 
 class FastCgiHandler(val documentRoot: String) extends Handler with LazyLogging {
-  private val reader = new ResponseReader(new RecordReader)
+  private val reader = new ResponseReader(new RecordReader, new HeaderParser)
   override def handle(request: Request): Response = {
     val socket = new Socket("127.0.0.1", 9000)
 

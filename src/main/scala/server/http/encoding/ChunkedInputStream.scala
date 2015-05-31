@@ -11,7 +11,12 @@ class ChunkedInputStream(in: InputStream) extends FilterInputStream(in) {
   private var state = STATE_PARSE_CHUNK_LENGTH
 
   override def read(): Int = {
-    buffer += super.read.toByte
+    val next = super.read
+    if(next == -1) {
+      return -1
+    }
+
+    buffer += next.toByte
     val endsWithCRLF = buffer.size >= 2 && buffer.last == 10 && buffer(buffer.size-2) == 13
     state match {
       case STATE_PARSE_CHUNK_LENGTH =>

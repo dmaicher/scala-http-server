@@ -29,10 +29,6 @@ class Record(val recordType: Byte, val requestId: Short, val data: Array[Byte]) 
 
     out
   }
-
-  def isFinalType: Boolean = {
-    recordType == RecordType.FCGI_ABORT_REQUEST || recordType == RecordType.FCGI_END_REQUEST
-  }
 }
 
 object RecordType {
