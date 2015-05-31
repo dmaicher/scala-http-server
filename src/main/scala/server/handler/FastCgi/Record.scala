@@ -12,7 +12,7 @@ class Record(val recordType: Byte, val requestId: Short, val data: Array[Byte]) 
 
   def toByteArray: Array[Byte] = {
     val contentLength = data.length
-    if(contentLength > 65535) {
+    if(contentLength > Record.MAX_CONTENT_LENGTH) {
       throw new Exception("too much data given")
     }
 
@@ -29,6 +29,10 @@ class Record(val recordType: Byte, val requestId: Short, val data: Array[Byte]) 
 
     out
   }
+}
+
+object Record {
+  val MAX_CONTENT_LENGTH = 65535
 }
 
 object RecordType {
@@ -48,5 +52,5 @@ class BeginRequestRecord(requestId: Short, val keepAlive: Boolean = false)
 class ParameterRecord(requestId: Short, val parameters: NameValuePairList = new NameValuePairList)
   extends Record(RecordType.FCGI_PARAMS, requestId, parameters.toByteArray)
 
-class InputRecord(requestId: Short, val input: String = "")
-  extends Record(RecordType.FCGI_STDIN, requestId, input.getBytes("UTF-8"))
+class InputRecord(requestId: Short, val input: Array[Byte] = new Array[Byte](0))
+  extends Record(RecordType.FCGI_STDIN, requestId, input)
