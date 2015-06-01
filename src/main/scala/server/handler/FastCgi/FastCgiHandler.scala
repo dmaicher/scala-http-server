@@ -8,9 +8,10 @@ import server.http.request.Request
 import server.http.response.Response
 
 class FastCgiHandler(val documentRoot: String) extends Handler with LazyLogging {
-  private val reader = new ResponseReader(new RecordReader, new HeaderParser)
+  val reader = new ResponseReader(new RecordReader, new HeaderParser)
   override def handle(request: Request): Response = {
     val socket = new Socket("127.0.0.1", 9000)
+    socket.setSoTimeout(30000)
 
     val params = new NameValuePairList
     params.add("SERVER_PORT", "8080")

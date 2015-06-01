@@ -1,6 +1,6 @@
 package server.http.response
 
-import java.io.OutputStream
+import java.io._
 import java.util.zip.GZIPOutputStream
 import server.http.headers.Headers
 import server.http.{HttpProtocol, HttpMethod}
@@ -20,7 +20,7 @@ class ResponseWriter {
 
     //TODO: only in case there is a response body with chunking otherwise we have to close it!
     response.headers += "Connection" -> {
-      if(request.protocol == HttpProtocol.HTTP_1_1 && request.keepAlive) {
+      if(false && request.protocol == HttpProtocol.HTTP_1_1 && request.keepAlive) {
         "Keep-Alive"
       }
       else {
@@ -28,17 +28,17 @@ class ResponseWriter {
       }
     }
 
-    if(response.hasBody && response.contentType != null && !response.contentType.isEmpty) {
+    //if(response.hasBody && response.contentType != null && !response.contentType.isEmpty) {
       //TODO: charset only for textual and not binary data (json, xml, svg, ...)
-      response.headers += "Content-Type" -> (response.contentType+(if(response.contentType.startsWith("text/")) "; chartset="+encoding))
-    }
+      //response.headers += "Content-Type" -> (response.contentType+(if(response.contentType.startsWith("text/")) "; chartset="+encoding))
+    //}
 
     var bodyOutputStream = outputStream
 
     //TODO: make configurable if chunked should be used [+ do not use for HEAD requests or 304 response]
     if(request.protocol == HttpProtocol.HTTP_1_1) {
       response.headers += Headers.TRANSFER_ENCODING -> "chunked"
-      bodyOutputStream = new ChunkedOutputStream(bodyOutputStream, 100)
+      bodyOutputStream = new ChunkedOutputStream(bodyOutputStream, 4096)
     }
 
     /*
@@ -57,7 +57,7 @@ class ResponseWriter {
     outputStream.write(stringBuilder.toString().getBytes(encoding))
 
     if(request.method != HttpMethod.HEAD && response.hasBody) {
-      bodyOutputStream.write(response.body.getBytes(encoding))
+      bodyOutputStream.write(response.body)
     }
 
     bodyOutputStream.flush()

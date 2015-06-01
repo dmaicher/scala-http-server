@@ -1,11 +1,12 @@
 package server.handler.FastCgi
 
-import java.io.{ByteArrayOutputStream, InputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream}
 import com.typesafe.scalalogging.LazyLogging
 import server.http.headers.HeaderParser
 import server.http.response.Response
 
 class ResponseReader(recordReader: RecordReader, val headerParser: HeaderParser) extends LazyLogging {
+  private val headerBodySeparator = List(13,10,13,10) //CRLF
   def read(inputStream: InputStream): Response = {
     var record: Record = null
     val stdOutContent = new ByteArrayOutputStream()
@@ -29,15 +30,15 @@ class ResponseReader(recordReader: RecordReader, val headerParser: HeaderParser)
       return new Response(500)
     }
 
-    getResponse(new String(stdOutContent.toByteArray, "UTF-8"))
+    getResponse(stdOutContent.toByteArray)
   }
 
-  private def getResponse(stdOutContent: String): Response = {
-    val parts = stdOutContent.split("\r\n\r\n", 2).map(_.trim)
-    val headers = headerParser.parse(parts(0))
-    val body = if(parts.length == 2) parts(1) else ""
-    val status = "[0-9]{3}".r.findFirstIn(headers.remove("Status").getOrElse("200")).getOrElse("200")
+  private def getResponse(stdOut: Array[Byte]): Response = {
+    var prev = List[Byte]()
+    val headerBytes = stdOut.takeWhile(b => {prev = prev :+ b; !prev.endsWith(headerBodySeparator)}).dropRight(3)
+    val headers = headerParser.parse(new String(headerBytes, "UTF-8"))
+    val status = "[0-9]{3}".r.findFirstIn(headers.getOrElse("Status", "200")).getOrElse("200")
 
-    new Response(status.toInt, body)
+    new Response(status.toInt, stdOut.slice(prev.length, stdOut.length), headers)
   }
 }

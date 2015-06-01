@@ -15,7 +15,7 @@ import server.router.Router
 
 object Server {
   def main (args: Array[String]) {
-    val server = new Server(8080, 50)
+    val server = new Server(8080, 75)
 
     /*
     server.getRouter.registerHandler(new Handler {

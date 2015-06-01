@@ -1,5 +1,6 @@
 package server.handler
 
+import java.io.{ByteArrayOutputStream, OutputStream, InputStream}
 import java.nio.charset.{CodingErrorAction, Charset}
 
 import server.http.request.Request
@@ -12,6 +13,7 @@ class StaticFileHandler(val path: String) extends Handler {
     val source = scala.io.Source.fromFile(path+"/"+request.location)(decoder)
     val content = source.mkString
     source.close()
-    new Response(200, content)
+    new Response(200)
   }
+
 }

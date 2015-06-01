@@ -2,8 +2,8 @@ package server.http.response
 
 import server.http.headers.Headers
 
-class Response(val status: Int, val body: String = "", val contentType: String = "text/html", val headers: Headers = new Headers) {
+class Response(val status: Int, val body: Array[Byte] = null, val headers: Headers = new Headers) {
   def hasBody = {
-    body != null && !body.isEmpty
+    body != null && body.nonEmpty
   }
 }

@@ -5,36 +5,26 @@ import java.io.InputStream
 class RecordReader {
   private val headerLength = 8
   def read(inputStream: InputStream): Record = {
-    var pos = 0
     val header = new Array[Byte](headerLength)
-    var padding = 0
-    var contentLength = 0
-    var content: Array[Byte] = new Array[Byte](0)
-    var in: Int = 0
-    while({in = inputStream.read(); in != -1} && pos < headerLength+contentLength+padding-1) {
-      val b = in.toByte
-      if (pos < headerLength) {
-        header(pos) = b
-        if(pos == 5) {
-          contentLength = ((header(4) & 0xFF) << 8) + (b & 0xFF)
-          content = new Array[Byte](contentLength)
-        }
-        if(pos == 6) {
-          padding = b & 0xFF
-        }
-      }
-      //only add to content when not in padding
-      else if(pos < headerLength+contentLength) {
-        content(pos - headerLength) = b
-      }
-      pos += 1
+    if(inputStream.read(header, 0, headerLength) == -1) {
+      return null
     }
 
-    if(pos >= headerLength) {
-      new Record(header, content)
+    val contentLength = ((header(4) & 0xFF) << 8) + (header(5) & 0xFF)
+    val content = new Array[Byte](contentLength)
+    if(contentLength > 0) {
+      if(inputStream.read(content, 0, contentLength) == -1) {
+        return null
+      }
     }
-    else {
-      null
+
+    val padding = header(6) & 0xFF
+    if(padding > 0) {
+      if(inputStream.read(new Array[Byte](padding), 0, padding) == -1) {
+        return null
+      }
     }
+
+    new Record(header, content)
   }
 }
