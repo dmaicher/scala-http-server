@@ -2,9 +2,9 @@ package server.http.response
 
 import java.io._
 import java.util.zip.GZIPOutputStream
+import server.http.encoding.ChunkedOutputStream
 import server.http.headers.Headers
 import server.http.{HttpProtocol, HttpMethod}
-import server.http.encoding.ChunkedOutputStream
 import server.http.request.Request
 
 class ResponseWriter {
@@ -18,9 +18,9 @@ class ResponseWriter {
     //TODO: get correct status message
     stringBuilder.append(request.protocol+" "+response.status+" OK"+CRLF)
 
-    //TODO: only in case there is a response body with chunking otherwise we have to close it!
+    //TODO: also make sure we close it if we don't have a content length and no chunks
     response.headers += "Connection" -> {
-      if(false && request.protocol == HttpProtocol.HTTP_1_1 && request.keepAlive) {
+      if(request.keepAlive) {
         "Keep-Alive"
       }
       else {
@@ -36,12 +36,16 @@ class ResponseWriter {
     var bodyOutputStream = outputStream
 
     //TODO: make configurable if chunked should be used [+ do not use for HEAD requests or 304 response]
-    if(request.protocol == HttpProtocol.HTTP_1_1) {
+    if(response.hasBody && response.body.getLength.isDefined) {
+      response.headers += "Content-Length" -> response.body.getLength.get.toString
+    }
+    else if( request.protocol == HttpProtocol.HTTP_1_1) {
       response.headers += Headers.TRANSFER_ENCODING -> "chunked"
-      bodyOutputStream = new ChunkedOutputStream(bodyOutputStream, 4096)
+      bodyOutputStream = new ChunkedOutputStream(bodyOutputStream, 2048)
     }
 
     /*
+    //TODO: make work ;P
     //TODO: consider priorities
     if(request.headers.getOrElse(Headers.ACCEPT_ENCODING, "").contains("gzip")) {
       response.headers += "Content-Encoding" -> "gzip"
@@ -57,7 +61,12 @@ class ResponseWriter {
     outputStream.write(stringBuilder.toString().getBytes(encoding))
 
     if(request.method != HttpMethod.HEAD && response.hasBody) {
-      bodyOutputStream.write(response.body)
+      response.writeBody(bodyOutputStream)
+    }
+
+    bodyOutputStream match {
+      case c: ChunkedOutputStream => c.finish()
+      case _ =>
     }
 
     bodyOutputStream.flush()

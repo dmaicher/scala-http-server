@@ -25,7 +25,10 @@ class FastCgiHandler(val documentRoot: String) extends Handler with LazyLogging 
     params.add("SCRIPT_NAME", "/test.php")
     params.add("REQUEST_URI", request.location)
     params.add("REQUEST_METHOD", request.method)
+    params.add("SYMFONY_ENV", "dev")
+    params.add("SYMFONY_DEBUG", "1")
     //params.add( "HTTP_CONNECTION" , "keep-alive" )
+
 
     for((k,v) <- request.headers) {
       params.add("HTTP_"+k.replace("-", "_").toUpperCase, v)

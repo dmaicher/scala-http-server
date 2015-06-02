@@ -6,6 +6,7 @@ import java.util.concurrent._
 
 import com.typesafe.scalalogging.LazyLogging
 import server.handler.FastCgi.FastCgiHandler
+import server.handler.StaticFileHandler
 import server.http.headers.{HeaderParser, Headers}
 import server.http.request.Request
 import server.http.request.parser.{ParseRequestException, RequestLineParser, RequestParser}
@@ -25,6 +26,7 @@ object Server {
     }, "/test")
     */
 
+    server.getRouter.registerHandler(new StaticFileHandler("/var/www"), "/static/")
     server.getRouter.registerHandler(new FastCgiHandler("/var/www/php"), "/")
 
     server.start()
