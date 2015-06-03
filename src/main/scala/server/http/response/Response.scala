@@ -19,4 +19,8 @@ class Response(val status: Int, val body: ResponseBody = null, val headers: Head
       body.write(outputStream)
     }
   }
+
+  def setContentType(t: String): Unit = {
+    headers += Headers.CONTENT_TYPE -> t
+  }
 }

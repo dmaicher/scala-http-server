@@ -3,7 +3,6 @@ package server
 import java.io.FileNotFoundException
 import java.net.{ServerSocket, Socket, SocketException, SocketTimeoutException}
 import java.util.concurrent._
-
 import com.typesafe.scalalogging.LazyLogging
 import server.handler.FastCgi.FastCgiHandler
 import server.handler.StaticFileHandler
@@ -12,21 +11,18 @@ import server.http.request.Request
 import server.http.request.parser.{ParseRequestException, RequestLineParser, RequestParser}
 import server.http.response.{Response, ResponseWriter}
 import server.http.{HttpMethod, HttpProtocol}
+import server.mime.MimeTypeRegistry
 import server.router.Router
+import server.utils.FileUtils
 
 object Server {
   def main (args: Array[String]) {
     val server = new Server(8080, 75)
 
-    /*
-    server.getRouter.registerHandler(new Handler {
-      override def handle(request: Request): Response = {
-        new Response(200, "<img src=\"bla.png\" />")
-      }
-    }, "/test")
-    */
-
-    server.getRouter.registerHandler(new StaticFileHandler("/var/www"), "/static/")
+    server.getRouter.registerHandler(
+      new StaticFileHandler(new MimeTypeRegistry, new FileUtils, "/var/www"),
+      "/static/"
+    )
     server.getRouter.registerHandler(new FastCgiHandler("/var/www/php"), "/")
 
     server.start()

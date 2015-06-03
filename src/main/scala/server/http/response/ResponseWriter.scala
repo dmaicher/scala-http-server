@@ -28,16 +28,11 @@ class ResponseWriter {
       }
     }
 
-    //if(response.hasBody && response.contentType != null && !response.contentType.isEmpty) {
-      //TODO: charset only for textual and not binary data (json, xml, svg, ...)
-      //response.headers += "Content-Type" -> (response.contentType+(if(response.contentType.startsWith("text/")) "; chartset="+encoding))
-    //}
-
     var bodyOutputStream = outputStream
 
     //TODO: make configurable if chunked should be used [+ do not use for HEAD requests or 304 response]
     if(response.hasBody && response.body.getLength.isDefined) {
-      response.headers += "Content-Length" -> response.body.getLength.get.toString
+      response.headers += Headers.CONTENT_LENGTH -> response.body.getLength.get.toString
     }
     else if( request.protocol == HttpProtocol.HTTP_1_1) {
       response.headers += Headers.TRANSFER_ENCODING -> "chunked"

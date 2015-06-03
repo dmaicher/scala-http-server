@@ -6,6 +6,7 @@ import scala.collection.mutable.HashMap
 class Headers extends HashMap[String, String]
 object Headers {
   val CONTENT_LENGTH = "Content-Length"
+  val CONTENT_TYPE = "Content-Type"
   val TRANSFER_ENCODING = "Transfer-Encoding"
   val ACCEPT_ENCODING = "Accept-Encoding"
   val CONNECTION = "Connection"
