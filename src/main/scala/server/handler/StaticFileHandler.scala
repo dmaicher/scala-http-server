@@ -9,9 +9,9 @@ import server.utils.FileUtils
 
 class StaticFileHandler(val mimeTypeRegistry: MimeTypeRegistry, fileUtils: FileUtils, val path: String) extends Handler {
   override def handle(request: Request): Response = {
-    val file = new File(path+"/"+request.location)
+    val file = new File(path+request.location)
     if(!file.exists()) {
-      throw new FileNotFoundException(path+"/"+request.location)
+      throw new FileNotFoundException(path+request.location)
     }
 
     val resp = new Response(200, new InputStreamResponseBody(new FileInputStream(file), Some(file.length())))

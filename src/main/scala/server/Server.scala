@@ -12,7 +12,8 @@ import server.http.request.parser.{ParseRequestException, RequestLineParser, Req
 import server.http.response.{Response, ResponseWriter}
 import server.http.{HttpMethod, HttpProtocol}
 import server.mime.MimeTypeRegistry
-import server.router.Router
+import server.router._
+import server.router.matcher.{OrChainRequestMatcher, LocationRequestMatcher, HostRequestMatcher, AndChainRequestMatcher}
 import server.utils.FileUtils
 
 object Server {
@@ -20,10 +21,14 @@ object Server {
     val server = new Server(8080, 75)
 
     server.getRouter.registerHandler(
-      new StaticFileHandler(new MimeTypeRegistry, new FileUtils, "/var/www"),
-      "/static/"
+      new StaticFileHandler(new MimeTypeRegistry, new FileUtils, "/var/www/php"),
+      new LocationRequestMatcher("/(js|css|images|bundles)/".r)
     )
-    server.getRouter.registerHandler(new FastCgiHandler("/var/www/php"), "/")
+
+    server.getRouter.registerHandler(
+      new FastCgiHandler("/var/www/php"),
+      new LocationRequestMatcher("/".r)
+    )
 
     server.start()
     System.in.read
@@ -47,6 +52,7 @@ class Server(val port: Int, val maxThreads: Int) extends LazyLogging {
     while(true) {
       val socket = serverSocket.accept()
       logger.debug("Accepted new incoming connection")
+      logger.debug("Currently "+(executor.getActiveCount/executor.getPoolSize.toFloat*100).ceil+" % workers busy")
       executor.execute(new Worker(socket, router))
     }
   }
@@ -96,7 +102,7 @@ class Worker(val socket: Socket, router: Router) extends Runnable with LazyLoggi
     }
 
     if(request == null) {
-      request = new Request(HttpMethod.GET, "/", HttpProtocol.HTTP_1, new Headers)
+      request = new Request(HttpMethod.GET, "/", "", HttpProtocol.HTTP_1, new Headers)
     }
 
     if(!socket.isClosed) {

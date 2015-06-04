@@ -3,7 +3,7 @@ package server.handler.FastCgi
 import java.net.Socket
 import com.typesafe.scalalogging.LazyLogging
 import server.handler.Handler
-import server.http.headers.HeaderParser
+import server.http.headers.{Headers, HeaderParser}
 import server.http.request.Request
 import server.http.response.Response
 
@@ -16,22 +16,24 @@ class FastCgiHandler(val documentRoot: String) extends Handler with LazyLogging 
     val params = new NameValuePairList
     params.add("SERVER_PORT", "8080")
     params.add("SERVER_ADDR", "127.0.0.1")
-    //params.add("REMOTE_ADDR", "127.0.0.1")
-    //params.add("REMOTE_HOST", "")
-    params.add("QUERY_STRING", "")
+    //params.add("REMOTE_ADDR", "127.0.0.1") //TODO
+    //params.add("REMOTE_PORT", "1234") //TODO
+    params.add("QUERY_STRING", request.queryString)
     params.add("DOCUMENT_ROOT", documentRoot)
-    params.add("SCRIPT_FILENAME", documentRoot+"/test.php")
+    params.add("SCRIPT_FILENAME", documentRoot+"/app.php")
     params.add("SERVER_PROTOCOL", request.protocol)
-    params.add("SCRIPT_NAME", "/test.php")
+    params.add("SCRIPT_NAME", "/app.php")
     params.add("REQUEST_URI", request.location)
     params.add("REQUEST_METHOD", request.method)
     params.add("SYMFONY_ENV", "dev")
     params.add("SYMFONY_DEBUG", "1")
-    //params.add( "HTTP_CONNECTION" , "keep-alive" )
-
+    //params.add("HTTP_CONNECTION", "keep-alive") //TODO
 
     for((k,v) <- request.headers) {
       params.add("HTTP_"+k.replace("-", "_").toUpperCase, v)
+      if(k == Headers.CONTENT_TYPE) {
+        params.add("CONTENT_TYPE", v)
+      }
     }
 
     val requestBodyBytes = request.body.getBytes("UTF-8")
@@ -48,7 +50,6 @@ class FastCgiHandler(val documentRoot: String) extends Handler with LazyLogging 
       )
     }
     out.write(new InputRecord(1).toByteArray)
-
     out.flush()
 
     logger.debug("Waiting for fast-cgi response")

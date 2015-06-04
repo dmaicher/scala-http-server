@@ -26,9 +26,12 @@ class RequestLineParserTestSpec  extends FlatSpec with Matchers with MockFactory
   }
 
   "RequestLineParser" should "parse valid Request-Lines successfully" in {
-    parser.parse("GET /") should be(new RequestLine(HttpMethod.GET, "/", HttpProtocol.HTTP_1))
-    parser.parse("GET / HTTP/1.0") should be(new RequestLine(HttpMethod.GET, "/", HttpProtocol.HTTP_1))
-    parser.parse("POST /bla HTTP/1.1") should be(new RequestLine(HttpMethod.POST, "/bla", HttpProtocol.HTTP_1_1))
-    parser.parse("HEAD /bla HTTP/1.0") should be(new RequestLine(HttpMethod.HEAD, "/bla", HttpProtocol.HTTP_1))
+    parser.parse("GET /") should be(new RequestLine(HttpMethod.GET, "/", "", HttpProtocol.HTTP_1))
+    parser.parse("GET /?foo?") should be(new RequestLine(HttpMethod.GET, "/", "foo?", HttpProtocol.HTTP_1))
+    parser.parse("GET /bla?foo=bar") should be(new RequestLine(HttpMethod.GET, "/bla", "foo=bar", HttpProtocol.HTTP_1))
+    parser.parse("GET /bla?foo=?bar") should be(new RequestLine(HttpMethod.GET, "/bla", "foo=?bar", HttpProtocol.HTTP_1))
+    parser.parse("GET / HTTP/1.0") should be(new RequestLine(HttpMethod.GET, "/", "", HttpProtocol.HTTP_1))
+    parser.parse("POST /bla HTTP/1.1") should be(new RequestLine(HttpMethod.POST, "/bla", "", HttpProtocol.HTTP_1_1))
+    parser.parse("HEAD /bla?foo HTTP/1.0") should be(new RequestLine(HttpMethod.HEAD, "/bla", "foo", HttpProtocol.HTTP_1))
   }
 }

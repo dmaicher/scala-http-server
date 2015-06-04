@@ -19,7 +19,7 @@ class ResponseWriter {
     stringBuilder.append(request.protocol+" "+response.status+" OK"+CRLF)
 
     //TODO: also make sure we close it if we don't have a content length and no chunks
-    response.headers += "Connection" -> {
+    response.headers += Headers.CONNECTION -> {
       if(request.keepAlive) {
         "Keep-Alive"
       }

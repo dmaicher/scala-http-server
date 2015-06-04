@@ -78,7 +78,14 @@ class RequestParser(val requestLineParser: RequestLineParser, val headerParser: 
       throw new ParseRequestException()
     }
 
-    val req = new Request(requestLine.method, requestLine.location, requestLine.protocol, headers, bufferToString(buffer))
+    val req = new Request(
+      requestLine.method,
+      requestLine.location,
+      requestLine.protocol,
+      requestLine.queryString,
+      headers,
+      bufferToString(buffer)
+    )
     logger.debug("Request body: "+req.body)
 
     req

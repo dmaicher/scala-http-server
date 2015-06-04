@@ -11,18 +11,21 @@ class ResponseReader(recordReader: RecordReader, val headerParser: HeaderParser)
   def read(inputStream: InputStream): Response = {
     var record: Record = null
     val stdOutContent = new ByteArrayOutputStream()
-    val stdErrContent = new ByteArrayOutputStream()
+    var stdErrContent: ByteArrayOutputStream = null
 
-    while({record = recordReader.read(inputStream); record != null} && record.recordType != RecordType.FCGI_END_REQUEST) {
+    while({record = recordReader.read(inputStream); record.recordType != RecordType.FCGI_END_REQUEST}) {
       if(record.recordType == RecordType.FCGI_STDOUT) {
         stdOutContent.write(record.data)
       }
       else if(record.recordType == RecordType.FCGI_STDERR) {
+        if(stdErrContent == null) {
+          stdErrContent = new ByteArrayOutputStream()
+        }
         stdErrContent.write(record.data)
       }
     }
 
-    if(stdErrContent.size() > 0) {
+    if(stdErrContent != null && stdErrContent.size() > 0) {
       logger.error("Received error stream via fast-cgi: %s".format(new String(stdErrContent.toByteArray, "UTF-8")))
     }
 

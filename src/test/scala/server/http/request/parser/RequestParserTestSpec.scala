@@ -16,7 +16,7 @@ class RequestParserTestSpec  extends FlatSpec with Matchers with MockFactory {
   val requestParser = new RequestParser(requestLineParser, headerParser)
 
   "RequestParser" should "parses Request-Line and Header parts of InputStream correctly" in {
-    val requestLine = new RequestLine(HttpMethod.GET, "/", HttpProtocol.HTTP_1_1)
+    val requestLine = new RequestLine(HttpMethod.GET, "/", "", HttpProtocol.HTTP_1_1)
     val headers = new Headers
 
     requestLineParser.parse _ expects("Request-line") returns requestLine
@@ -36,7 +36,7 @@ class RequestParserTestSpec  extends FlatSpec with Matchers with MockFactory {
     val body = "Some_really_nice_body_öäü"
     val headers = new Headers
 
-    requestLineParser.parse _ expects * returns new RequestLine(HttpMethod.GET, "/", HttpProtocol.HTTP_1_1)
+    requestLineParser.parse _ expects * returns new RequestLine(HttpMethod.GET, "/", "", HttpProtocol.HTTP_1_1)
     headerParser.parse _ expects * returns headers
 
     val input = new ByteArrayInputStream(("RL\r\nH\r\n\r\n"+body).getBytes("UTF-8"))
@@ -50,7 +50,7 @@ class RequestParserTestSpec  extends FlatSpec with Matchers with MockFactory {
     val headers = new Headers
     headers += "Content-Length" -> body.getBytes("UTF-8").length.toString
 
-    requestLineParser.parse _ expects * returns new RequestLine(HttpMethod.GET, "/", HttpProtocol.HTTP_1_1)
+    requestLineParser.parse _ expects * returns new RequestLine(HttpMethod.GET, "/", "", HttpProtocol.HTTP_1_1)
     headerParser.parse _ expects * returns headers
 
     val input = new ByteArrayInputStream(("RL\r\nH\r\n\r\n"+body).getBytes("UTF-8"))
@@ -64,7 +64,7 @@ class RequestParserTestSpec  extends FlatSpec with Matchers with MockFactory {
     val headers = new Headers
     headers += "Transfer-Encoding" -> "chunked"
 
-    requestLineParser.parse _ expects * returns new RequestLine(HttpMethod.GET, "/", HttpProtocol.HTTP_1_1)
+    requestLineParser.parse _ expects * returns new RequestLine(HttpMethod.GET, "/", "", HttpProtocol.HTTP_1_1)
     headerParser.parse _ expects * returns headers
 
     val outByte = new ByteArrayOutputStream()

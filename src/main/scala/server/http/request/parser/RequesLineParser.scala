@@ -2,7 +2,7 @@ package server.http.request.parser
 
 import server.http.{HttpMethod, HttpProtocol}
 
-case class RequestLine(method: String, location: String, protocol: String)
+case class RequestLine(method: String, location: String, queryString: String, protocol: String)
 
 class RequestLineParser {
   def parse(s: String): RequestLine = {
@@ -32,6 +32,12 @@ class RequestLineParser {
       }
     }
 
-    new RequestLine(method, parts(1), protocol)
+    val locationParts = parts(1).split("\\?", 2)
+    new RequestLine(
+      method,
+      locationParts(0),
+      if(locationParts.length > 1) locationParts(1) else "",
+      protocol
+    )
   }
 }
