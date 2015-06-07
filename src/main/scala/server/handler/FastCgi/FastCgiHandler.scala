@@ -30,7 +30,7 @@ class FastCgiHandler(val documentRoot: String) extends Handler with LazyLogging 
     //params.add("HTTP_CONNECTION", "keep-alive") //TODO
 
     for((k,v) <- request.headers) {
-      params.add("HTTP_"+k.replace("-", "_").toUpperCase, v)
+      params.add("HTTP_"+k.toString.replace("-", "_").toUpperCase, v)
       if(k == Headers.CONTENT_TYPE) {
         params.add("CONTENT_TYPE", v)
       }
