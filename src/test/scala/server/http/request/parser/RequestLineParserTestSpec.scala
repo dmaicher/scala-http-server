@@ -28,6 +28,7 @@ class RequestLineParserTestSpec  extends FlatSpec with Matchers with MockFactory
   "RequestLineParser" should "parse valid Request-Lines successfully" in {
     parser.parse("GET /") should be(new RequestLine(HttpMethod.GET, "/", "", HttpProtocol.HTTP_1))
     parser.parse("GET /?foo?") should be(new RequestLine(HttpMethod.GET, "/", "foo?", HttpProtocol.HTTP_1))
+    parser.parse("GET /??foo") should be(new RequestLine(HttpMethod.GET, "/", "?foo", HttpProtocol.HTTP_1))
     parser.parse("GET /bla?foo=bar") should be(new RequestLine(HttpMethod.GET, "/bla", "foo=bar", HttpProtocol.HTTP_1))
     parser.parse("GET /bla?foo=?bar") should be(new RequestLine(HttpMethod.GET, "/bla", "foo=?bar", HttpProtocol.HTTP_1))
     parser.parse("GET / HTTP/1.0") should be(new RequestLine(HttpMethod.GET, "/", "", HttpProtocol.HTTP_1))

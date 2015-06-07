@@ -19,6 +19,9 @@ class RequestParser(val requestLineParser: RequestLineParser, val headerParser: 
   codec.onMalformedInput(CodingErrorAction.IGNORE)
   codec.onUnmappableCharacter(CodingErrorAction.IGNORE)
 
+  private val CRLF = List(13,10)
+  private val CRLFCRLF = List(13,10,13,10)
+
   def parse(inputStream: InputStream): Request = {
     var requestLine: RequestLine = null
     var headers: Headers = null
@@ -32,17 +35,17 @@ class RequestParser(val requestLineParser: RequestLineParser, val headerParser: 
       buffer += read.toByte
       state match {
         case STATE_PARSE_REQUEST_LINE =>
-          if(endsWithLineBreak(buffer)) {
+          if(buffer.endsWith(CRLF)) {
             requestLine = requestLineParser.parse(bufferToString(buffer).trim)
             state = STATE_PARSE_HEADERS
             buffer.clear()
           }
         case STATE_PARSE_HEADERS =>
-          if(endsWithLineBreak(buffer, 2)) {
+          if(buffer.endsWith(CRLFCRLF)) {
             headers = headerParser.parse(bufferToString(buffer).trim)
             logger.debug(headers.toString())
             buffer.clear()
-            val transferEnc = headers.getOrElse(Headers.TRANSFER_ENCODING, "identity").toLowerCase
+            val transferEnc = headers.get(Headers.TRANSFER_ENCODING).map(_.toLowerCase).getOrElse("identity")
             state = {
               if(!transferEnc.equals("identity")) {
                 curInputStream = new ChunkedInputStream(inputStream)
@@ -89,19 +92,6 @@ class RequestParser(val requestLineParser: RequestLineParser, val headerParser: 
     logger.debug("Request body: "+req.body)
 
     req
-  }
-
-  private def endsWithLineBreak(b: ArrayBuffer[Byte], count: Int = 1): Boolean = {
-    if(b.size < count*2) {
-      return false
-    }
-    for(i <- Range(0, count)) {
-      if(b(b.size-2*i-2) != 13 || b(b.size-2*i-1) != 10) {
-        return false
-      }
-    }
-
-    true
   }
 
   private def bufferToString(b: ArrayBuffer[Byte]): String = {

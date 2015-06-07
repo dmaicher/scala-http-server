@@ -13,7 +13,7 @@ import server.http.response.{Response, ResponseWriter}
 import server.http.{HttpMethod, HttpProtocol}
 import server.mime.MimeTypeRegistry
 import server.router._
-import server.router.matcher.{OrChainRequestMatcher, LocationRequestMatcher, HostRequestMatcher, AndChainRequestMatcher}
+import server.router.matcher.LocationRequestMatcher
 import server.utils.FileUtils
 
 object Server {
@@ -35,44 +35,58 @@ object Server {
   }
 }
 
-class Server(val port: Int, val maxThreads: Int) extends LazyLogging {
+class Server(private val port: Int, private val maxThreads: Int) extends LazyLogging {
+  private val router = new Router
   private val executor = new ThreadPoolExecutor(
     maxThreads,
     maxThreads,
     60,
     TimeUnit.SECONDS,
     new LinkedBlockingQueue[Runnable](),
-    new WorkerThreadFactory
+    new WorkerThreadFactory(router)
   )
   executor.allowCoreThreadTimeOut(true)
-  private val router = new Router
 
   def start(): Unit = {
     val serverSocket = new ServerSocket(port)
     while(true) {
       val socket = serverSocket.accept()
       logger.debug("Accepted new incoming connection")
-      logger.debug("Currently "+(executor.getActiveCount/executor.getPoolSize.toFloat*100).ceil+" % workers busy")
-      executor.execute(new Worker(socket, router))
+      logger.debug("Currently %d/%d (%f %%) workers busy".format(
+        executor.getActiveCount,
+        executor.getPoolSize,
+        if(executor.getPoolSize > 0)(executor.getActiveCount/executor.getPoolSize.toFloat*100).ceil else 0.0
+      ))
+      if(executor.getActiveCount == maxThreads) {
+        logger.warn("Reached maximum limit of active workers. Request will be queued!")
+      }
+      executor.execute(new Worker(socket))
     }
   }
 
   def getRouter = router
 }
 
-class WorkerThreadFactory extends ThreadFactory {
+class WorkerThreadFactory(private val router: Router) extends ThreadFactory {
   override def newThread(runnable: Runnable): Thread = {
-    val t = new WorkerThread(runnable, new RequestParser(new RequestLineParser, new HeaderParser))
+    val t = new WorkerThread(runnable, new RequestParser(new RequestLineParser, new HeaderParser), new ResponseWriter(), router)
     t.setDaemon(true)
     t
   }
 }
 
-class WorkerThread(private val runnable: Runnable, private val requestParser: RequestParser) extends Thread(runnable) {
+class WorkerThread(
+    private val runnable: Runnable,
+    private val requestParser: RequestParser,
+    private val responseWriter: ResponseWriter,
+    private val router: Router
+  ) extends Thread(runnable) {
   def getRequestParser = requestParser
+  def getResponseWriter = responseWriter
+  def getRouter = router
 }
 
-class Worker(val socket: Socket, router: Router) extends Runnable with LazyLogging {
+class Worker(private val socket: Socket) extends Runnable with LazyLogging {
   socket.setSoTimeout(5000)
 
   override def run(): Unit = {
@@ -80,18 +94,19 @@ class Worker(val socket: Socket, router: Router) extends Runnable with LazyLoggi
   }
 
   private def processRequest(): Unit = {
+    val workerThread = Thread.currentThread().asInstanceOf[WorkerThread]
     var request: Request = null
     var response: Response = null
     try {
-      request = Thread.currentThread().asInstanceOf[WorkerThread].getRequestParser.parse(socket.getInputStream)
-      response = router.handle(request)
+      request = workerThread.getRequestParser.parse(socket.getInputStream)
+      response = workerThread.getRouter.handle(request)
     }
     catch {
       case e: ParseRequestException =>
-        logger.warn("Error pasing request", e)
+        logger.warn("Error parsing request", e)
         response = new Response(400)
       case e: SocketTimeoutException =>
-        logger.warn("Timeout", e)
+        logger.warn("Read timeout", e)
         response = new Response(408)
       case e: FileNotFoundException =>
         logger.warn("Not found", e)
@@ -108,7 +123,7 @@ class Worker(val socket: Socket, router: Router) extends Runnable with LazyLoggi
     if(!socket.isClosed) {
       try {
         logger.debug("Writing response with status %d".format(response.status))
-        new ResponseWriter().write(socket.getOutputStream, request, response)
+        workerThread.getResponseWriter.write(socket.getOutputStream, request, response)
       }
       catch {
         case e: SocketException => logger.warn("Error writing response", e)

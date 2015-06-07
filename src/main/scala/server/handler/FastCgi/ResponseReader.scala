@@ -7,7 +7,7 @@ import server.http.response.Response
 import server.http.response.body.ByteArrayResponseBody
 
 class ResponseReader(recordReader: RecordReader, val headerParser: HeaderParser) extends LazyLogging {
-  private val headerBodySeparator = List(13,10,13,10) //CRLF
+  private val headerBodySeparator = List(13,10,13,10) //CRLFCRLF
   def read(inputStream: InputStream): Response = {
     var record: Record = null
     val stdOutContent = new ByteArrayOutputStream()
