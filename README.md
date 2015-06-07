@@ -13,6 +13,7 @@ What is working?
 - [x] chunked transport encoding
 - [ ] gzip transport encoding
 - [x] support for HTTP 1.1 keep-alive
+- [ ] maybe introduce some kind of URL rewriting like apache and nginx offer?
 - [ ] more tests
 
 So far it looks like the performance is not too bad in comparison with apache2 or nginx for example. Maybe at some point I will put together some benchmarks.
