@@ -1,11 +1,10 @@
 package server.http.response
 
 import java.io._
-import java.util.zip.GZIPOutputStream
 import server.http.encoding.ChunkedOutputStream
 import server.http.headers.Headers
-import server.http.{HttpProtocol, HttpMethod}
 import server.http.request.Request
+import server.http.{HttpStatus, HttpMethod, HttpProtocol}
 
 class ResponseWriter {
   private val CRLF = "\r\n"
@@ -15,8 +14,9 @@ class ResponseWriter {
 
     val stringBuilder = new StringBuilder
 
-    //TODO: get correct status message
-    stringBuilder.append(request.protocol+" "+response.status+" OK"+CRLF)
+    stringBuilder.append(
+      request.protocol+" "+response.status+" "+HttpStatus.getPhrase(response.status).getOrElse("")+CRLF
+    )
 
     //TODO: also make sure we close it if we don't have a content length and no chunks
     response.headers += Headers.CONNECTION -> {
@@ -48,9 +48,9 @@ class ResponseWriter {
     }
     */
 
-    for((k,v) <- response.headers) {
-      stringBuilder.append(k+": "+v+CRLF)
-    }
+    response.headers.foreach(kv => {
+      stringBuilder.append(kv._1+": "+kv._2+CRLF)
+    })
 
     stringBuilder.append(CRLF)
     outputStream.write(stringBuilder.toString().getBytes(encoding))
