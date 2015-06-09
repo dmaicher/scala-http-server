@@ -5,11 +5,7 @@ import java.io.OutputStream
 import server.http.headers.Headers
 import server.http.response.body.ResponseBody
 
-class Response(val status: Int, val body: ResponseBody = null, val headers: Headers = new Headers) {
-  if(status == 304 && hasBody) {
-    throw new Exception("response with status 304 must not have a body")
-  }
-
+class Response(val status: Int = 200, val body: ResponseBody = null, val headers: Headers = new Headers) {
   def hasBody = {
     body != null
   }

@@ -34,6 +34,11 @@ class Headers extends HashMap[HeaderKey, String] {
   def getOrElse[B1 >: String](key: String, default: => B1): B1 = getOrElse(new HeaderKey(key), default)
 
   def contains(key: String): Boolean = contains(new HeaderKey(key))
+  def containsWithValue(key: String, value: String): Boolean = containsWithValue(new HeaderKey(key), value)
+  def containsWithValue(key: HeaderKey, value: String): Boolean = get(key) match {
+    case None => false
+    case Some(v) => v.equalsIgnoreCase(value)
+  }
 
   def +=(kv: (String, String)): Headers = +=(new HeaderKey(kv._1) -> kv._2)
 }
@@ -44,4 +49,5 @@ object Headers {
   val TRANSFER_ENCODING = new HeaderKey("Transfer-Encoding")
   val ACCEPT_ENCODING = new HeaderKey("Accept-Encoding")
   val CONNECTION = new HeaderKey("Connection")
+  val KEEP_ALIVE = new HeaderKey("Keep-Alive")
 }

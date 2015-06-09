@@ -1,16 +1,19 @@
 package server.http.response
 
 import java.io._
+import java.util.zip.GZIPOutputStream
+import server.http.connection.KeepAlivePolicy
 import server.http.encoding.ChunkedOutputStream
 import server.http.headers.Headers
 import server.http.request.Request
-import server.http.{HttpStatus, HttpMethod, HttpProtocol}
+import server.http.{HttpMethod, HttpProtocol, HttpStatus}
 
-class ResponseWriter {
+class ResponseWriter(private val keepAlivePolicy: KeepAlivePolicy) {
   private val CRLF = "\r\n"
   private val encoding = "UTF-8"
+  private val keepAliveHeader = "timeout=%d, max=%d".format(keepAlivePolicy.timeout, keepAlivePolicy.max)
 
-  def write(outputStream: OutputStream, request: Request, response: Response): Unit = {
+  def write(outputStream: OutputStream, request: Request, response: Response, requestCountForCurrentConnection: Int): Boolean = {
 
     val stringBuilder = new StringBuilder
 
@@ -18,35 +21,47 @@ class ResponseWriter {
       request.protocol+" "+response.status+" "+HttpStatus.getPhrase(response.status).getOrElse("")+CRLF
     )
 
-    //TODO: also make sure we close it if we don't have a content length and no chunks
-    response.headers += Headers.CONNECTION -> {
-      if(request.keepAlive) {
-        "Keep-Alive"
+    val writeBody = response.hasBody && bodyAllowed(request, response)
+    var keepAlive = this.keepAlive(request, requestCountForCurrentConnection)
+    var bodyOutputStream = outputStream
+    var chunkedOutputStream: Option[ChunkedOutputStream] = None
+    var gzipOutputStream: Option[GZIPOutputStream] = None
+
+    if(writeBody) {
+      val acceptChunked = request.protocol == HttpProtocol.HTTP_1_1
+      val acceptGzip = acceptChunked && request.headers.getOrElse(Headers.ACCEPT_ENCODING, "").toLowerCase.contains("gzip")
+      val hasContentLength = response.body.getLength.isDefined
+      if(acceptChunked && (!hasContentLength || acceptGzip)) {
+        response.headers += Headers.TRANSFER_ENCODING -> "chunked"
+        chunkedOutputStream = Some(new ChunkedOutputStream(bodyOutputStream, 2048))
+        bodyOutputStream = chunkedOutputStream.get
+
+        if(acceptGzip) {
+          response.headers.remove(Headers.CONTENT_LENGTH)
+          response.headers += "Content-Encoding" -> "gzip"
+          gzipOutputStream = Some(new GZIPOutputStream(bodyOutputStream))
+          bodyOutputStream = gzipOutputStream.get
+        }
+      }
+      else if(hasContentLength) {
+        response.headers += Headers.CONTENT_LENGTH -> response.body.getLength.get.toString
       }
       else {
-        "Close"
+        keepAlive = false
       }
     }
-
-    var bodyOutputStream = outputStream
-
-    //TODO: make configurable if chunked should be used [+ do not use for HEAD requests or 304 response]
-    if(response.hasBody && response.body.getLength.isDefined) {
-      response.headers += Headers.CONTENT_LENGTH -> response.body.getLength.get.toString
-    }
-    else if( request.protocol == HttpProtocol.HTTP_1_1) {
-      response.headers += Headers.TRANSFER_ENCODING -> "chunked"
-      bodyOutputStream = new ChunkedOutputStream(bodyOutputStream, 2048)
+    else if(response.status == 304) {
+      response.headers.remove(Headers.CONTENT_LENGTH)
     }
 
-    /*
-    //TODO: make work ;P
-    //TODO: consider priorities
-    if(request.headers.getOrElse(Headers.ACCEPT_ENCODING, "").contains("gzip")) {
-      response.headers += "Content-Encoding" -> "gzip"
-      bodyOutputStream = new GZIPOutputStream(bodyOutputStream)
+    if(keepAlive) {
+      response.headers += Headers.CONNECTION -> "Keep-Alive"
+      response.headers += Headers.KEEP_ALIVE -> keepAliveHeader
     }
-    */
+
+    if(!keepAlive) {
+      response.headers += Headers.CONNECTION -> "Close"
+    }
 
     response.headers.foreach(kv => {
       stringBuilder.append(kv._1+": "+kv._2+CRLF)
@@ -55,15 +70,23 @@ class ResponseWriter {
     stringBuilder.append(CRLF)
     outputStream.write(stringBuilder.toString().getBytes(encoding))
 
-    if(request.method != HttpMethod.HEAD && response.hasBody) {
+    if(writeBody) {
       response.writeBody(bodyOutputStream)
     }
 
-    bodyOutputStream match {
-      case c: ChunkedOutputStream => c.finish()
-      case _ =>
-    }
+    gzipOutputStream.foreach(_.finish())
+    chunkedOutputStream.foreach(_.finish())
 
     bodyOutputStream.flush()
+
+    keepAlive
+  }
+
+  private def bodyAllowed(request: Request, response: Response): Boolean = {
+    request.method != HttpMethod.HEAD && response.status != 304
+  }
+
+  private def keepAlive(request: Request, requestCountForCurrentConnection: Int): Boolean = {
+    keepAlivePolicy.allow && requestCountForCurrentConnection < keepAlivePolicy.max && request.keepAlive
   }
 }
