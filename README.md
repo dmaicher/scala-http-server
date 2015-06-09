@@ -11,7 +11,7 @@ What is working?
 - [x] FastCgiHandler to proxy requests via fast-cgi protocol (tested with php-fpm) 
 - [ ] keep-alive for connections to fast-cgi proxy
 - [x] chunked transport encoding
-- [ ] gzip transport encoding
+- [x] gzip content encoding
 - [x] support for HTTP 1.1 keep-alive
 - [ ] maybe introduce some kind of URL rewriting like apache and nginx offer?
 - [ ] more tests
