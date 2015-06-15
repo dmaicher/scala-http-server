@@ -31,7 +31,7 @@ class HeaderParserTestSpec  extends FlatSpec with Matchers with MockFactory {
 
   "HeaderParser" should "parse duplicate headers correctly" in {
     val correct = new Headers()
-    correct += "Key" -> "Value1,Value2"
+    correct += "Key" -> List("Value1", "Value2")
     parser.parse("Key: Value1\r\nKey: Value2") should be(correct)
   }
 

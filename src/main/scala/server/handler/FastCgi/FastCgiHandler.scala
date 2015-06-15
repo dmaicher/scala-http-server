@@ -29,9 +29,9 @@ class FastCgiHandler(val documentRoot: String) extends Handler with LazyLogging 
     params.add("SYMFONY_DEBUG", "1")
     //params.add("HTTP_CONNECTION", "keep-alive") //TODO
 
-    for((k,v) <- request.headers) {
+    for((k,v) <- request.headers.foldValues) {
       params.add("HTTP_"+k.toString.replace("-", "_").toUpperCase, v)
-      if(k == Headers.CONTENT_TYPE) {
+      if(k.equals(Headers.CONTENT_TYPE)) {
         params.add("CONTENT_TYPE", v)
       }
     }

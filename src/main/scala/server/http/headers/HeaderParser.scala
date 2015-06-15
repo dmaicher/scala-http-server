@@ -5,7 +5,7 @@ class HeaderParser {
     val headers = new Headers
     s.trim.split("\r\n(?!( |\t))").map(_.split(":", 2).map(_.trim)).foreach(h => {
       if(h.length == 2) {
-        headers += new HeaderKey(h(0)) -> (headers.get(h(0)).map(_+",").getOrElse("")+h(1).replaceAll("\r\n[ \t]+", " "))
+        headers.putWithAppend(h(0), h(1).replaceAll("\r\n[ \t]+", " "))
       }
     })
     headers

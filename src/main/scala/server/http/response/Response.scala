@@ -1,7 +1,6 @@
 package server.http.response
 
 import java.io.OutputStream
-
 import server.http.headers.Headers
 import server.http.response.body.ResponseBody
 

@@ -2,7 +2,7 @@ package server.handler.FastCgi
 
 import java.io.{ByteArrayOutputStream, InputStream}
 import com.typesafe.scalalogging.LazyLogging
-import server.http.headers.HeaderParser
+import server.http.headers.{HeaderKey, HeaderParser}
 import server.http.response.Response
 import server.http.response.body.ByteArrayResponseBody
 
@@ -41,7 +41,7 @@ class ResponseReader(recordReader: RecordReader, val headerParser: HeaderParser)
     var prev = List[Byte]()
     val headerBytes = stdOut.takeWhile(b => {prev = prev :+ b; !prev.endsWith(headerBodySeparator)}).dropRight(3)
     val headers = headerParser.parse(new String(headerBytes, "UTF-8"))
-    val status = "[0-9]{3}".r.findFirstIn(headers.getOrElse("Status", "200")).getOrElse("200")
+    val status = "[0-9]{3}".r.findFirstIn(headers.foldValues.getOrElse(new HeaderKey("Status"), "200")).getOrElse("200")
 
     new Response(
       status.toInt,

@@ -29,7 +29,7 @@ class ResponseWriter(private val keepAlivePolicy: KeepAlivePolicy) {
 
     if(writeBody) {
       val acceptChunked = request.protocol == HttpProtocol.HTTP_1_1
-      val acceptGzip = acceptChunked && request.headers.getOrElse(Headers.ACCEPT_ENCODING, "").toLowerCase.contains("gzip")
+      val acceptGzip = acceptChunked && request.headers.getOrElse(Headers.ACCEPT_ENCODING, List()).map(_.toLowerCase).mkString("").contains("gzip")
       val hasContentLength = response.body.getLength.isDefined
       if(acceptChunked && (!hasContentLength || acceptGzip)) {
         response.headers += Headers.TRANSFER_ENCODING -> "chunked"
@@ -38,7 +38,7 @@ class ResponseWriter(private val keepAlivePolicy: KeepAlivePolicy) {
 
         if(acceptGzip) {
           response.headers.remove(Headers.CONTENT_LENGTH)
-          response.headers += "Content-Encoding" -> "gzip"
+          response.headers += Headers.CONTENT_ENCODING -> "gzip"
           gzipOutputStream = Some(new GZIPOutputStream(bodyOutputStream))
           bodyOutputStream = gzipOutputStream.get
         }
@@ -58,13 +58,15 @@ class ResponseWriter(private val keepAlivePolicy: KeepAlivePolicy) {
       response.headers += Headers.CONNECTION -> "Keep-Alive"
       response.headers += Headers.KEEP_ALIVE -> keepAliveHeader
     }
-
-    if(!keepAlive) {
+    else {
       response.headers += Headers.CONNECTION -> "Close"
     }
 
-    response.headers.foreach(kv => {
-      stringBuilder.append(kv._1+": "+kv._2+CRLF)
+    //http://tools.ietf.org/html/rfc6265#section-4.1
+    response.headers.foldValuesExceptKey(Headers.SET_COOKIE).foreach(kv => {
+      kv._2.foreach(v => {
+        stringBuilder.append(kv._1+": "+v+CRLF)
+      })
     })
 
     stringBuilder.append(CRLF)

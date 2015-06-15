@@ -49,4 +49,18 @@ class ResponseWriterTestSpec  extends FlatSpec with Matchers with MockFactory {
     responseContent should include("keep-alive: timeout=3, max=2")
     out.reset()
   }
+
+  "ResponseWriter" should "fold all headers but Set-Cookie in response" in {
+    val writer = new ResponseWriter(new KeepAlivePolicy(true, 1, 1))
+    val out = new ByteArrayOutputStream()
+
+    val response = new Response(200)
+    response.headers += "X-Foo" -> List("Bar1", "Bar2")
+    response.headers += Headers.SET_COOKIE -> List("Bar1", "Bar2")
+
+    writer.write(out, new Request(HttpMethod.GET, "/", HttpProtocol.HTTP_1_1), response, 0)
+    val responseContent = new String(out.toByteArray, "UTF-8")
+    responseContent should be("HTTP/1.1 200 OK\r\nX-Foo: Bar1,Bar2\r\nSet-Cookie: Bar1\r\nSet-Cookie: Bar2\r\nConnection: Close\r\n\r\n")
+    out.reset()
+  }
 }

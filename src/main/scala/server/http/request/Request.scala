@@ -15,5 +15,5 @@ class Request(
     protocol == HttpProtocol.HTTP_1_1 && headers.containsWithValue(Headers.CONNECTION, "keep-alive")
   }
 
-  def host: Option[String] = headers.get("Host").map(_.replaceFirst(":[0-9]+$", ""))
+  def host: Option[String] = headers.foldValues.get(Headers.HOST).map(_.replaceFirst(":[0-9]+$", ""))
 }

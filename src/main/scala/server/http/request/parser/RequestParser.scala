@@ -45,7 +45,7 @@ class RequestParser(val requestLineParser: RequestLineParser, val headerParser: 
             headers = headerParser.parse(bufferToString(buffer).trim)
             logger.debug(headers.toString())
             buffer.clear()
-            val transferEnc = headers.get(Headers.TRANSFER_ENCODING).map(_.toLowerCase).getOrElse("identity")
+            val transferEnc = headers.get(Headers.TRANSFER_ENCODING).map(_.head.toLowerCase).getOrElse("identity")
             state = {
               if(!transferEnc.equals("identity")) {
                 curInputStream = new ChunkedInputStream(inputStream)
@@ -58,7 +58,7 @@ class RequestParser(val requestLineParser: RequestLineParser, val headerParser: 
               else if(headers.contains(Headers.CONTENT_LENGTH)) {
                 val length = {
                   try {
-                    headers(Headers.CONTENT_LENGTH).toInt
+                    headers(Headers.CONTENT_LENGTH).head.toInt
                   }
                   catch {
                     case e: NumberFormatException => throw new ParseRequestException("Invalid Content-Length")
