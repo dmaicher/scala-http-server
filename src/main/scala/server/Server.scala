@@ -17,12 +17,13 @@ object Server {
   def main (args: Array[String]) {
     val config = new ServerConfig
     config.port = 8080
+    config.maxWorkers = 75
 
     val server = new Server(config)
 
     server.registerHandler(
       new StaticFileHandler(new MimeTypeRegistry, new FileUtils, "/var/www/php"),
-      new LocationRequestMatcher("/(js|css|images|bundles)/".r)
+      new LocationRequestMatcher("/(js|css|images|bundles|static)/".r)
     )
 
     server.registerHandler(

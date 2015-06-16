@@ -60,7 +60,7 @@ class ResponseWriterTestSpec  extends FlatSpec with Matchers with MockFactory {
 
     writer.write(out, new Request(HttpMethod.GET, "/", HttpProtocol.HTTP_1_1), response, 0)
     val responseContent = new String(out.toByteArray, "UTF-8")
-    responseContent should be("HTTP/1.1 200 OK\r\nX-Foo: Bar1,Bar2\r\nSet-Cookie: Bar1\r\nSet-Cookie: Bar2\r\nConnection: Close\r\n\r\n")
+    responseContent should be("HTTP/1.1 200 OK\r\nX-Foo: Bar1,Bar2\r\nSet-Cookie: Bar1\r\nSet-Cookie: Bar2\r\nConnection: close\r\n\r\n")
     out.reset()
   }
 }

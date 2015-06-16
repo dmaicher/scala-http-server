@@ -8,7 +8,8 @@ import server.http.request.Request
 import server.http.response.Response
 
 class FastCgiHandler(val documentRoot: String) extends Handler with LazyLogging {
-  val reader = new ResponseReader(new RecordReader, new HeaderParser)
+  private val reader = new ResponseReader(new RecordReader, new HeaderParser)
+
   override def handle(request: Request): Response = {
     val socket = new Socket("127.0.0.1", 9000)
     socket.setSoTimeout(30000)
@@ -27,7 +28,6 @@ class FastCgiHandler(val documentRoot: String) extends Handler with LazyLogging 
     params.add("REQUEST_METHOD", request.method)
     params.add("SYMFONY_ENV", "dev")
     params.add("SYMFONY_DEBUG", "1")
-    //params.add("HTTP_CONNECTION", "keep-alive") //TODO
 
     for((k,v) <- request.headers.foldValues) {
       params.add("HTTP_"+k.toString.replace("-", "_").toUpperCase, v)

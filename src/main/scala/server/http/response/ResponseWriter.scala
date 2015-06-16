@@ -55,11 +55,11 @@ class ResponseWriter(private val keepAlivePolicy: KeepAlivePolicy) {
     }
 
     if(keepAlive) {
-      response.headers += Headers.CONNECTION -> "Keep-Alive"
+      response.headers += Headers.CONNECTION -> "keep-alive"
       response.headers += Headers.KEEP_ALIVE -> keepAliveHeader
     }
     else {
-      response.headers += Headers.CONNECTION -> "Close"
+      response.headers += Headers.CONNECTION -> "close"
     }
 
     //http://tools.ietf.org/html/rfc6265#section-4.1
