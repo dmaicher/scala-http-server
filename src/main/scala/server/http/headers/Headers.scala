@@ -26,7 +26,11 @@ class HeaderKey(private val key: String) {
   override def toString: String = key
 }
 
-class Headers extends HashMap[HeaderKey, List[String]] {
+class Headers(kvs: (HeaderKey, String)*) extends HashMap[HeaderKey, List[String]] {
+  kvs.foreach(kv => {
+    put(kv._1, kv._2)
+  })
+
   def put(key: String, values: List[String]): Option[List[String]] = put(new HeaderKey(key), values)
   def put(key: String, value: String): Option[List[String]] = put(new HeaderKey(key), value)
   def put(key: HeaderKey, value: String): Option[List[String]] = put(key, List(value))
@@ -88,4 +92,7 @@ object Headers {
   val KEEP_ALIVE = new HeaderKey("Keep-Alive")
   val SET_COOKIE = new HeaderKey("Set-Cookie")
   val HOST = new HeaderKey("Host")
+  val LAST_MODIFIED = new HeaderKey("Last-Modified")
+  val IF_MODIFIED_SINCE = new HeaderKey("If-Modified-Since")
+  val DATE = new HeaderKey("Date")
 }

@@ -1,5 +1,6 @@
 package server.handler.FastCgi
 
+import java.io.File
 import java.net.Socket
 import com.typesafe.scalalogging.LazyLogging
 import server.handler.Handler
@@ -13,6 +14,8 @@ class FastCgiHandler(val documentRoot: String) extends Handler with LazyLogging 
   override def handle(request: Request): Response = {
     val socket = new Socket("127.0.0.1", 9000)
     socket.setSoTimeout(30000)
+
+    //val resolvedDocRoot = new File(documentRoot).getCanonicalPath
 
     val params = new NameValuePairList
     params.add("SERVER_PORT", "8080")

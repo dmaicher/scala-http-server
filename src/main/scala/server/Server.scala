@@ -10,7 +10,7 @@ import server.http.connection.KeepAlivePolicy
 import server.mime.MimeTypeRegistry
 import server.router._
 import server.router.matcher.{RequestMatcher, LocationRequestMatcher}
-import server.utils.FileUtils
+import server.utils.{DateUtils, FileUtils}
 import server.worker.{Worker, WorkerThreadFactory}
 
 object Server {
@@ -22,12 +22,12 @@ object Server {
     val server = new Server(config)
 
     server.registerHandler(
-      new StaticFileHandler(new MimeTypeRegistry, new FileUtils, "/var/www/php"),
+      new StaticFileHandler(new MimeTypeRegistry, new FileUtils, new DateUtils, "/var/www/php"),
       new LocationRequestMatcher("/(js|css|images|bundles|static)/".r)
     )
 
     server.registerHandler(
-      new FastCgiHandler("/var/www/php"),
+      new FastCgiHandler("/var/www/current"),
       new LocationRequestMatcher("/".r)
     )
 

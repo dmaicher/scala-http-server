@@ -1,9 +1,6 @@
 package server.http.request.parser
 
-import java.io.{ByteArrayOutputStream, ByteArrayInputStream}
-import java.util.zip.GZIPOutputStream
-import javax.print.attribute.standard.Compression
-
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import org.scalamock.scalatest._
 import org.scalatest._
 import server.http.encoding.ChunkedOutputStream

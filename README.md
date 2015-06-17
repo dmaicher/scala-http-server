@@ -14,7 +14,7 @@ What is working?
 - [x] gzip content encoding
 - [x] support for HTTP 1.1 keep-alive
 - [ ] maybe introduce some kind of URL rewriting like apache and nginx offer?
-- [ ] support for conditional GET requests (If-Modified-Since header) and corresponding 304 responses
+- [ ] support for more conditional GET requests (currently only If-Modified-Since for 304 working)
 - [ ] more tests
 
 So far it looks like the performance is not too bad in comparison with apache2 or nginx for example. Maybe at some point I will put together some benchmarks.

@@ -7,11 +7,12 @@ import server.http.headers.Headers
 import server.http.{HttpProtocol, HttpMethod}
 import server.http.connection.KeepAlivePolicy
 import server.http.request.Request
+import server.utils.DateUtils
 
 class ResponseWriterTestSpec  extends FlatSpec with Matchers with MockFactory {
 
   "ResponseWriter" should "write correct response status line" in {
-    val writer = new ResponseWriter(new KeepAlivePolicy(true, 1, 1))
+    val writer = new ResponseWriter(new KeepAlivePolicy(true, 1, 1), new DateUtils)
     val out = new ByteArrayOutputStream()
 
     writer.write(out, new Request(HttpMethod.GET, "/", HttpProtocol.HTTP_1_1), new Response(200), 0)
@@ -30,7 +31,7 @@ class ResponseWriterTestSpec  extends FlatSpec with Matchers with MockFactory {
   "ResponseWriter" should "write correct Connection + Keep-Alive header and return correct keepAlive flag" in {
     val resp = new Response()
 
-    val writer = new ResponseWriter(new KeepAlivePolicy(true, 3, 2))
+    val writer = new ResponseWriter(new KeepAlivePolicy(true, 3, 2), new DateUtils)
 
     val out = new ByteArrayOutputStream()
 
@@ -51,7 +52,7 @@ class ResponseWriterTestSpec  extends FlatSpec with Matchers with MockFactory {
   }
 
   "ResponseWriter" should "fold all headers but Set-Cookie in response" in {
-    val writer = new ResponseWriter(new KeepAlivePolicy(true, 1, 1))
+    val writer = new ResponseWriter(new KeepAlivePolicy(true, 1, 1), new DateUtils)
     val out = new ByteArrayOutputStream()
 
     val response = new Response(200)

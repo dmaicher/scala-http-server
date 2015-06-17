@@ -7,8 +7,9 @@ import server.http.encoding.ChunkedOutputStream
 import server.http.headers.Headers
 import server.http.request.Request
 import server.http.{HttpMethod, HttpProtocol, HttpStatus}
+import server.utils.DateUtils
 
-class ResponseWriter(private val keepAlivePolicy: KeepAlivePolicy) {
+class ResponseWriter(private val keepAlivePolicy: KeepAlivePolicy, private val dateUtils: DateUtils) {
   private val CRLF = "\r\n"
   private val encoding = "UTF-8"
   private val keepAliveHeader = "timeout=%d, max=%d".format(keepAlivePolicy.timeout, keepAlivePolicy.max)
@@ -52,6 +53,7 @@ class ResponseWriter(private val keepAlivePolicy: KeepAlivePolicy) {
     }
     else if(response.status == 304) {
       response.headers.remove(Headers.CONTENT_LENGTH)
+      response.headers += Headers.DATE -> dateUtils.getHttpFormattedDate(System.currentTimeMillis())
     }
 
     if(keepAlive) {
