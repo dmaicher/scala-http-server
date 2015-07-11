@@ -1,17 +1,16 @@
 package server.handler.FastCgi
 
-import java.io.File
 import java.net.Socket
 import com.typesafe.scalalogging.LazyLogging
 import server.handler.Handler
-import server.http.headers.{Headers, HeaderParser}
+import server.http.headers.{HeaderParser, Headers}
 import server.http.request.Request
 import server.http.response.Response
 
 class FastCgiHandler(val documentRoot: String) extends Handler with LazyLogging {
   private val reader = new ResponseReader(new RecordReader, new HeaderParser)
 
-  override def handle(request: Request): Response = {
+  override def handle(request: Request): Option[Response] = {
     val socket = new Socket("127.0.0.1", 9000)
     socket.setSoTimeout(30000)
 
@@ -58,6 +57,7 @@ class FastCgiHandler(val documentRoot: String) extends Handler with LazyLogging 
     logger.debug("Waiting for fast-cgi response")
     val response = reader.read(socket.getInputStream)
     socket.close()
-    response
+
+    Some(response)
   }
 }

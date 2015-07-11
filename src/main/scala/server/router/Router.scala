@@ -5,6 +5,7 @@ import server.handler.Handler
 import server.http.request.Request
 import server.http.response.Response
 import server.router.matcher.RequestMatcher
+
 import scala.collection.mutable
 
 class Router extends Handler {
@@ -14,12 +15,10 @@ class Router extends Handler {
     handlers.put(requestMatcher, handler)
   }
 
-  override def handle(request: Request): Response = {
+  override def handle(request: Request): Option[Response] = {
     handlers.find(_._1.matching(request)).map(_._2) match {
       case Some(h) => h.handle(request)
-      case _ => throw new FileNotFoundException(
-        "No handler found for request host: %s, location: %s, headers: %s".format(request.host, request.location, request.headers)
-      )
+      case _ => None
     }
   }
 }

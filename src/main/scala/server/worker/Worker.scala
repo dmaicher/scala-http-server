@@ -25,7 +25,12 @@ class Worker(private val socket: Socket) extends Runnable with LazyLogging {
     var response: Response = null
     try {
       request = workerThread.getRequestParser.parse(socket.getInputStream)
-      response = workerThread.getRouter.handle(request)
+      workerThread.getRouter.handle(request) match {
+        case Some(r) => response = r
+        case _ => throw new FileNotFoundException(
+          "Router could not serve request: %s, location: %s, headers: %s".format(request.host, request.location, request.headers)
+        )
+      }
     }
     catch {
       case e: ParseRequestException =>

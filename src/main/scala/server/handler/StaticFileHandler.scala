@@ -9,10 +9,10 @@ import server.mime.MimeTypeRegistry
 import server.utils.{DateUtils, FileUtils}
 
 class StaticFileHandler(val mimeTypeRegistry: MimeTypeRegistry, val fileUtils: FileUtils, val dateUtils: DateUtils, val path: String) extends Handler {
-  override def handle(request: Request): Response = {
+  override def handle(request: Request): Option[Response] = {
     val file = new File(path+request.location)
     if(!file.exists()) {
-      throw new FileNotFoundException(path+request.location)
+      return None
     }
 
     val responseHeaders = new Headers()
@@ -39,6 +39,6 @@ class StaticFileHandler(val mimeTypeRegistry: MimeTypeRegistry, val fileUtils: F
       )
     )
 
-    resp
+    Some(resp)
   }
 }

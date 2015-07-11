@@ -4,5 +4,5 @@ import server.http.request.Request
 import server.http.response.Response
 
 trait Handler {
-  def handle(request: Request): Response
+  def handle(request: Request): Option[Response]
 }

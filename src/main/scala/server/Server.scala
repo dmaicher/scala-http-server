@@ -5,7 +5,7 @@ import java.util.concurrent._
 import com.typesafe.scalalogging.LazyLogging
 import server.config.ServerConfig
 import server.handler.FastCgi.FastCgiHandler
-import server.handler.{Handler, StaticFileHandler}
+import server.handler.{ChainHandler, Handler, StaticFileHandler}
 import server.http.connection.KeepAlivePolicy
 import server.mime.MimeTypeRegistry
 import server.router._
@@ -22,12 +22,10 @@ object Server {
     val server = new Server(config)
 
     server.registerHandler(
-      new StaticFileHandler(new MimeTypeRegistry, new FileUtils, new DateUtils, "/var/www/php"),
-      new LocationRequestMatcher("/(js|css|images|bundles|static)/".r)
-    )
-
-    server.registerHandler(
-      new FastCgiHandler("/var/www/current"),
+      new ChainHandler(
+        new StaticFileHandler(new MimeTypeRegistry, new FileUtils, new DateUtils, "/var/www/php"),
+        new FastCgiHandler("/var/www/php")
+      ),
       new LocationRequestMatcher("/".r)
     )
 
