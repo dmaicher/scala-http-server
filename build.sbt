@@ -2,7 +2,7 @@ name := "scala-http-server"
 
 version := "0.1"
 
-scalaVersion := "2.11.5"
+scalaVersion := "2.11.7"
 
 libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-simple" % "1.7.10",
